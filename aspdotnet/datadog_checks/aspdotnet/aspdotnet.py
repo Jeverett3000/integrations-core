@@ -13,12 +13,13 @@ EVENT_TYPE = SOURCE_TYPE_NAME = 'aspdotnet'
 class AspdotnetCheck(PDHBaseCheck):
     def __new__(cls, name, init_config, instances):
 
-        if PY3 and not is_affirmative(instances[0].get('use_legacy_check_version', False)):
-            from .check import AspdotnetCheckV2
-
-            return AspdotnetCheckV2(name, init_config, instances)
-        else:
+        if not PY3 or is_affirmative(
+            instances[0].get('use_legacy_check_version', False)
+        ):
             return super(AspdotnetCheck, cls).__new__(cls)
+        from .check import AspdotnetCheckV2
+
+        return AspdotnetCheckV2(name, init_config, instances)
 
     def __init__(self, name, init_config, instances=None):
         super(AspdotnetCheck, self).__init__(name, init_config, instances=instances, counter_list=DEFAULT_COUNTERS)

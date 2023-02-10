@@ -74,11 +74,11 @@ class CouchDb(AgentCheck):
                     self.log.debug("Could not parse CouchDB version: %s", version)
 
             except Exception as e:
-                raise errors.ConnectionError("Unable to talk to the server: {}".format(e))
+                raise errors.ConnectionError(f"Unable to talk to the server: {e}")
 
             major_version = int(version.split('.')[0])
             if major_version == 0:
-                raise errors.BadVersionError("Unknown version {}".format(version))
+                raise errors.BadVersionError(f"Unknown version {version}")
             elif major_version <= 1:
                 self.checker = CouchDB1(self)
             else:
@@ -126,19 +126,16 @@ class CouchDB1:
                 if name in ['doc_count', 'disk_size'] and val is not None:
                     metric_name = '.'.join(['couchdb', 'by_db', name])
                     metric_tags = list(tags)
-                    metric_tags.append('db:%s' % db_name)
+                    metric_tags.append(f'db:{db_name}')
                     self.gauge(metric_name, val, tags=metric_tags, device_name=db_name)
 
     def check(self):
         server = self.agent_check.get_server()
-        tags = ['instance:%s' % server] + self.agent_check.get_config_tags()
+        tags = [f'instance:{server}'] + self.agent_check.get_config_tags()
         data = self.get_data(server, tags)
         self._create_metric(data, tags=tags)
 
     def get_data(self, server, tags):
-        # The dictionary to be returned.
-        couchdb = {'stats': None, 'databases': {}}
-
         # First, get overall statistics.
         endpoint = '/_stats/'
 
@@ -148,10 +145,9 @@ class CouchDB1:
 
         # No overall stats? bail out now
         if overall_stats is None:
-            raise CheckException("No stats could be retrieved from %s" % url)
+            raise CheckException(f"No stats could be retrieved from {url}")
 
-        couchdb['stats'] = overall_stats
-
+        couchdb = {'databases': {}, 'stats': overall_stats}
         # Next, get all database names.
         endpoint = '/_all_dbs/'
 
@@ -177,7 +173,7 @@ class CouchDB1:
                 db_stats = self.agent_check.get(url, tags)
             except requests.exceptions.HTTPError as e:
                 couchdb['databases'][dbName] = None
-                if (e.response.status_code == 403) or (e.response.status_code == 401):
+                if e.response.status_code in [403, 401]:
                     self.db_exclude[server].append(dbName)
 
                     self.agent_check.warning(
@@ -229,9 +225,12 @@ class CouchDB2:
     def _build_dd_metrics(self, info, tags):
         data = info['view_index']
         ddtags = list(tags)
-        ddtags.append("design_document:{0}".format(info['name']))
-        ddtags.append("language:{0}".format(data['language']))
-
+        ddtags.extend(
+            (
+                "design_document:{0}".format(info['name']),
+                "language:{0}".format(data['language']),
+            )
+        )
         for key, value in iteritems(data['sizes']):
             self.gauge("couchdb.by_ddoc.{0}_size".format(key), value, ddtags)
 
@@ -271,8 +270,10 @@ class CouchDB2:
             counts[task['type']] += 1
             rtags = list(tags)
             if task['type'] == 'replication':
-                for tag in ['doc_id', 'source', 'target', 'user']:
-                    rtags.append("{0}:{1}".format(tag, task[tag]))
+                rtags.extend(
+                    "{0}:{1}".format(tag, task[tag])
+                    for tag in ['doc_id', 'source', 'target', 'user']
+                )
                 rtags.append("type:{0}".format('continuous' if task['continuous'] else 'one-time'))
                 metrics = [
                     'doc_write_failures',
@@ -311,12 +312,11 @@ class CouchDB2:
 
     def _get_instance_names(self, server):
         name = self.instance.get('name')
-        if name is None:
-            url = urljoin(server, "/_membership")
-            names = self.agent_check.get(url, [])['cluster_nodes']
-            return names[: self.instance.get('max_nodes_per_check', self.MAX_NODES_PER_CHECK)]
-        else:
+        if name is not None:
             return [name]
+        url = urljoin(server, "/_membership")
+        names = self.agent_check.get(url, [])['cluster_nodes']
+        return names[: self.instance.get('max_nodes_per_check', self.MAX_NODES_PER_CHECK)]
 
     def _get_dbs_to_scan(self, server, name, tags):
         dbs = self.agent_check.get(urljoin(server, "_all_dbs"), tags)
@@ -371,7 +371,7 @@ class CouchDB2:
 
         # No overall stats? bail out now
         if stats is None:
-            raise Exception("No stats could be retrieved from %s" % url)
+            raise Exception(f"No stats could be retrieved from {url}")
 
         return stats
 

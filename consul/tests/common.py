@@ -11,7 +11,7 @@ PORT = '8500'
 
 HOST = get_docker_hostname()
 
-URL = 'http://{}:{}'.format(HOST, PORT)
+URL = f'http://{HOST}:{PORT}'
 
 CHECK_NAME = 'consul'
 

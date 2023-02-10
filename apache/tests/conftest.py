@@ -32,7 +32,7 @@ def dd_environment():
 
 
 def generate_metrics():
-    for _ in range(0, 100):
+    for _ in range(100):
         requests.get(BASE_URL)
 
 

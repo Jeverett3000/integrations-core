@@ -74,12 +74,15 @@ class Apache(AgentCheck):
         apache_port = parsed_url.port or 80
         service_check_name = 'apache.can_connect'
         service_check_tags = [
-            'host:%s' % apache_host,
-            'apache_host:%s' % apache_host,
-            'port:%s' % apache_port,
+            f'host:{apache_host}',
+            f'apache_host:{apache_host}',
+            f'port:{apache_port}',
         ] + tags
         if disable_generic_tags:
-            service_check_tags = ['apache_host:%s' % apache_host, 'port:%s' % apache_port] + tags
+            service_check_tags = [
+                f'apache_host:{apache_host}',
+                f'port:{apache_port}',
+            ] + tags
         try:
             self.log.debug(
                 'apache check initiating request, connect timeout %d receive %d',
@@ -123,7 +126,7 @@ class Apache(AgentCheck):
 
                 # Special case: kBytes => bytes
                 if metric == 'Total kBytes':
-                    value = value * 1024
+                    value *= 1024
 
                 # Send metric as a gauge, if applicable
                 if metric in self.GAUGES:
@@ -138,22 +141,21 @@ class Apache(AgentCheck):
                     self.rate(metric_name, value, tags=tags)
 
         if metric_count == 0:
-            if self.assumed_url.get(self.instance['apache_status_url']) is None and url[-5:] != '?auto':
-                self.assumed_url[self.instance['apache_status_url']] = '%s?auto' % url
-                self.warning("Assuming url was not correct. Trying to add ?auto suffix to the url")
-                self.check(self.instance)
-                return
-            else:
+            if (
+                self.assumed_url.get(self.instance['apache_status_url'])
+                is not None
+                or url[-5:] == '?auto'
+            ):
                 raise CheckException(
-                    "No metrics were fetched for this instance. Make sure that %s is the proper url."
-                    % self.instance['apache_status_url']
+                    f"No metrics were fetched for this instance. Make sure that {self.instance['apache_status_url']} is the proper url."
                 )
 
+            self.assumed_url[self.instance['apache_status_url']] = f'{url}?auto'
+            self.warning("Assuming url was not correct. Trying to add ?auto suffix to the url")
+            self.check(self.instance)
+            return
         if not version_submitted:
-            # Can't get it from the mod_status output, try to get it from the server header even though
-            # it may not be exposed with some configurations.
-            server_version = r.headers.get("Server")
-            if server_version:
+            if server_version := r.headers.get("Server"):
                 self._submit_metadata(server_version)
 
     def _submit_metadata(self, value):
@@ -168,7 +170,7 @@ class Apache(AgentCheck):
             return
 
         version = match.group(1)
-        version_parts = {name: part for name, part in zip(('major', 'minor', 'patch'), version.split('.'))}
+        version_parts = dict(zip(('major', 'minor', 'patch'), version.split('.')))
         self.set_metadata('version', version, scheme='parts', final_scheme='semver', part_map=version_parts)
         self.log.debug("found apache version %s", version)
 

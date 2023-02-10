@@ -48,7 +48,10 @@ def test_e2e(dd_agent_check):
     aggregator.assert_all_metrics_covered()
 
     for instance in CHECK_CONFIG['instances']:
-        tags = ['instance:confluent_platform-localhost-{}'.format(instance['port']), 'jmx_server:localhost']
+        tags = [
+            f"instance:confluent_platform-localhost-{instance['port']}",
+            'jmx_server:localhost',
+        ]
         # TODO: Assert the status "status=AgentCheck.OK"
         # JMXFetch is currently sending the service check status as string, but should be number.
         # Add "status=AgentCheck.OK" once that's fixed

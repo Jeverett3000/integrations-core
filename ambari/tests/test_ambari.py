@@ -148,7 +148,12 @@ def test_get_host_metrics(instance, aggregator):
         ('process.proc_total', 128.0),
     ]
     for m in metrics:
-        aggregator.assert_metric(name='ambari.{}'.format(m[0]), value=m[1], tags=cluster_tag, hostname='my_host_2')
+        aggregator.assert_metric(
+            name=f'ambari.{m[0]}',
+            value=m[1],
+            tags=cluster_tag,
+            hostname='my_host_2',
+        )
 
 
 def test_get_component_metrics(init_config, instance, aggregator):
@@ -194,7 +199,7 @@ def test_get_component_metrics(init_config, instance, aggregator):
         ('cpu.cpu_wio._sum', 0.0),
     ]
     for m in metrics:
-        aggregator.assert_metric(name='ambari.{}'.format(m[0]), value=m[1], tags=namenode_tags)
+        aggregator.assert_metric(name=f'ambari.{m[0]}', value=m[1], tags=namenode_tags)
 
 
 def test_get_service_health(init_config, instance, aggregator):

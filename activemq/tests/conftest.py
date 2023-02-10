@@ -37,10 +37,10 @@ def populate_server():
         s = requests.Session()
         s.auth = TEST_AUTH
         s.headers = {'accept': 'application/json', 'origin': BASE_URL}
-        data = s.get(ARTEMIS_URL + '/list')
+        data = s.get(f'{ARTEMIS_URL}/list')
         channels = data.json()['value']['org.apache.activemq.artemis']
         broker = [k for k in channels.keys() if k.startswith('broker') and ',' not in k][0]
-        bean = 'org.apache.activemq.artemis:{}'.format(broker)
+        bean = f'org.apache.activemq.artemis:{broker}'
 
         for queue in TEST_QUEUES:
             body = {
@@ -54,15 +54,15 @@ def populate_server():
                 "boolean,int,boolean,boolean)",
                 "arguments": ["activemq.notifications", "ANYCAST", queue, None, True, -1, False, True],
             }
-            s.post(ARTEMIS_URL + '/exec', json=body)
+            s.post(f'{ARTEMIS_URL}/exec', json=body)
 
     else:
         for queue in TEST_QUEUES:
-            url = '{}/{}?type=queue'.format(ACTIVEMQ_URL, queue)
+            url = f'{ACTIVEMQ_URL}/{queue}?type=queue'
             requests.post(url, data=TEST_MESSAGE, auth=TEST_AUTH)
 
         for topic in TEST_TOPICS:
-            url = '{}/{}?type=topic'.format(ACTIVEMQ_URL, topic)
+            url = f'{ACTIVEMQ_URL}/{topic}?type=topic'
             requests.post(url, data=TEST_MESSAGE, auth=TEST_AUTH)
 
 

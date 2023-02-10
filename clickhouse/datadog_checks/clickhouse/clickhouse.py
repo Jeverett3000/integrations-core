@@ -30,9 +30,9 @@ class ClickhouseCheck(AgentCheck):
         self._tags = self.instance.get('tags', [])
 
         # Add global tags
-        self._tags.append('server:{}'.format(self._server))
-        self._tags.append('port:{}'.format(self._port))
-        self._tags.append('db:{}'.format(self._db))
+        self._tags.append(f'server:{self._server}')
+        self._tags.append(f'port:{self._port}')
+        self._tags.append(f'db:{self._db}')
 
         self._error_sanitizer = ErrorSanitizer(self._password)
         self.check_initializations.append(self.validate_config)
@@ -65,7 +65,9 @@ class ClickhouseCheck(AgentCheck):
         version = list(self.execute_query_raw('SELECT version()'))[0][0]
 
         # The version comes in like `19.15.2.2` though sometimes there is no patch part
-        version_parts = {name: part for name, part in zip(('year', 'major', 'minor', 'patch'), version.split('.'))}
+        version_parts = dict(
+            zip(('year', 'major', 'minor', 'patch'), version.split('.'))
+        )
 
         self.set_metadata('version', version, scheme='parts', final_scheme='calver', part_map=version_parts)
 
@@ -109,14 +111,11 @@ class ClickhouseCheck(AgentCheck):
                 compression=self._compression,
                 secure=self._tls_verify,
                 settings={},
-                # Make every client unique for server logs
-                client_name='datadog-{}'.format(self.check_id),
+                client_name=f'datadog-{self.check_id}',
             )
             client.connection.connect()
         except Exception as e:
-            error = 'Unable to connect to ClickHouse: {}'.format(
-                self._error_sanitizer.clean(self._error_sanitizer.scrub(str(e)))
-            )
+            error = f'Unable to connect to ClickHouse: {self._error_sanitizer.clean(self._error_sanitizer.scrub(str(e)))}'
             self.service_check(self.SERVICE_CHECK_CONNECT, self.CRITICAL, message=error, tags=self._tags)
 
             # When an exception is raised in the context of another one, both will be printed. To avoid

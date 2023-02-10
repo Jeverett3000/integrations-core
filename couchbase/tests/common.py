@@ -16,7 +16,7 @@ INDEX_STATS_PORT = '9102'
 
 # Tags and common bucket name
 CUSTOM_TAGS = ['optional:tag1']
-CHECK_TAGS = CUSTOM_TAGS + ['instance:http://{}:{}'.format(HOST, PORT)]
+CHECK_TAGS = CUSTOM_TAGS + [f'instance:http://{HOST}:{PORT}']
 BUCKET_NAME = 'cb_bucket'
 INDEX_STATS_TAGS = CHECK_TAGS + [
     'bucket:cb_bucket',
@@ -25,10 +25,10 @@ INDEX_STATS_TAGS = CHECK_TAGS + [
     'scope:default',
 ]
 
-URL = 'http://{}:{}'.format(HOST, PORT)
-QUERY_URL = 'http://{}:{}'.format(HOST, QUERY_PORT)
-SG_URL = 'http://{}:{}'.format(HOST, SG_PORT)
-INDEX_STATS_URL = 'http://{}:{}'.format(HOST, INDEX_STATS_PORT)
+URL = f'http://{HOST}:{PORT}'
+QUERY_URL = f'http://{HOST}:{QUERY_PORT}'
+SG_URL = f'http://{HOST}:{SG_PORT}'
+INDEX_STATS_URL = f'http://{HOST}:{INDEX_STATS_PORT}'
 CB_CONTAINER_NAME = 'couchbase-standalone'
 USER = 'Administrator'
 PASSWORD = 'password'

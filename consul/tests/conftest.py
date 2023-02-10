@@ -12,7 +12,7 @@ from . import common
 
 
 def _consul_config_path():
-    server_file = 'server-{}.json'.format(os.getenv('CONSUL_VERSION'))
+    server_file = f"server-{os.getenv('CONSUL_VERSION')}.json"
     return os.path.join(common.HERE, 'compose', server_file)
 
 
@@ -20,14 +20,11 @@ def ping_cluster():
     """
     Wait for the slave to connect to the master
     """
-    response = requests.get('{}/v1/status/peers'.format(common.URL))
+    response = requests.get(f'{common.URL}/v1/status/peers')
     response.raise_for_status()
 
     # Wait for all 3 agents to join the cluster
-    if len(response.json()) == 3:
-        return True
-
-    return False
+    return len(response.json()) == 3
 
 
 @pytest.fixture(scope='session')

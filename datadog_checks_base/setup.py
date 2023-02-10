@@ -28,12 +28,8 @@ def get_requirements(fpath, exclude=None, only=None):
         requirements = []
         for line in f:
             name = line.split("==")[0]
-            if only:
-                if name in only:
-                    requirements.append(line.rstrip())
-            else:
-                if name not in exclude:
-                    requirements.append(line.rstrip())
+            if only and name in only or not only and name not in exclude:
+                requirements.append(line.rstrip())
         return requirements
 
 
@@ -42,7 +38,7 @@ def parse_pyproject_array(name):
     import re
     from ast import literal_eval
 
-    pattern = r'^{} = (\[.+?\])$'.format(name)
+    pattern = f'^{name} = (\[.+?\])$'
 
     with open(os.path.join(HERE, 'pyproject.toml'), 'r', encoding='utf-8') as f:
         # Windows \r\n prevents match

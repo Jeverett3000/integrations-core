@@ -74,9 +74,7 @@ class CiscoACICheck(AgentCheck):
             )
             self._api_cache[instance_hash] = api
 
-        service_check_tags = []
-        for url in aci_urls:
-            service_check_tags.append("url:{}".format(url))
+        service_check_tags = [f"url:{url}" for url in aci_urls]
         service_check_tags.extend(self.check_tags)
         service_check_tags.extend(self.instance.get('tags', []))
 
@@ -87,7 +85,7 @@ class CiscoACICheck(AgentCheck):
             self.service_check(
                 SERVICE_CHECK_NAME,
                 AgentCheck.CRITICAL,
-                message="aci login returned a status of {}".format(e),
+                message=f"aci login returned a status of {e}",
                 tags=service_check_tags,
             )
             raise
@@ -102,7 +100,7 @@ class CiscoACICheck(AgentCheck):
             self.service_check(
                 SERVICE_CHECK_NAME,
                 AgentCheck.CRITICAL,
-                message="aci tenant operations failed, returning a status of {}".format(e),
+                message=f"aci tenant operations failed, returning a status of {e}",
                 tags=service_check_tags,
             )
             api.close()
@@ -116,7 +114,7 @@ class CiscoACICheck(AgentCheck):
             self.service_check(
                 SERVICE_CHECK_NAME,
                 AgentCheck.CRITICAL,
-                message="aci fabric operations failed, returning a status of {}".format(e),
+                message=f"aci fabric operations failed, returning a status of {e}",
                 tags=service_check_tags,
             )
             api.close()
@@ -130,7 +128,7 @@ class CiscoACICheck(AgentCheck):
             self.service_check(
                 SERVICE_CHECK_NAME,
                 AgentCheck.CRITICAL,
-                message="aci capacity operations failed, returning a status of {}".format(e),
+                message=f"aci capacity operations failed, returning a status of {e}",
                 tags=service_check_tags,
             )
             api.close()
@@ -148,8 +146,8 @@ class CiscoACICheck(AgentCheck):
 
         user_tags = instance.get('tags', [])
         for mname, mval in iteritems(metrics):
-            tags_to_send = []
             if mval:
+                tags_to_send = []
                 if hostname:
                     tags_to_send += self.check_tags
                 tags_to_send += user_tags + tags
@@ -162,8 +160,7 @@ class CiscoACICheck(AgentCheck):
                     self.log.debug(log_line, mname, obj_type)
 
     def get_external_host_tags(self):
-        external_host_tags = []
-        for hostname, tags in iteritems(self.external_host_tags):
-            host_tags = tags + self.check_tags
-            external_host_tags.append((hostname, {SOURCE_TYPE: host_tags}))
-        return external_host_tags
+        return [
+            (hostname, {SOURCE_TYPE: tags + self.check_tags})
+            for hostname, tags in iteritems(self.external_host_tags)
+        ]

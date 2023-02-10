@@ -632,12 +632,10 @@ FIXTURE_LIST = [
     # c8e9a0dbceac67fb1149684f7fc7772c - Api.get_tenant_stats
 ]
 
-# The map will contain the md5 hash to the fixture
-# name. The file on disk should be named with the
-# {MD5 hash}.txt of the mock_path used.
-FIXTURE_LIST_FILE_MAP = {}
-for fixture in FIXTURE_LIST:
-    FIXTURE_LIST_FILE_MAP[fixture] = hashlib.md5(fixture.encode('utf-8')).hexdigest()
+FIXTURE_LIST_FILE_MAP = {
+    fixture: hashlib.md5(fixture.encode('utf-8')).hexdigest()
+    for fixture in FIXTURE_LIST
+}
 
 
 class FakeSessionWrapper(SessionWrapper):

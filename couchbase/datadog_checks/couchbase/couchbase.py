@@ -53,7 +53,7 @@ class Couchbase(AgentCheck):
         if self._server is None:
             raise ConfigurationError("The server must be specified")
         self._tags = list(set(self.instance.get('tags', [])))
-        self._tags.append('instance:{}'.format(self._server))
+        self._tags.append(f'instance:{self._server}')
 
         self._previous_status = None
         self._version = None
@@ -64,27 +64,27 @@ class Couchbase(AgentCheck):
         for key, storage_type in storage_totals.items():
             for metric_name, val in storage_type.items():
                 if val is not None:
-                    metric_name = 'couchbase.{}.{}'.format(key, self.camel_case_to_joined_lower(metric_name))
+                    metric_name = f'couchbase.{key}.{self.camel_case_to_joined_lower(metric_name)}'
                     self.gauge(metric_name, val, tags=self._tags)
 
         # Get bucket metrics
         for bucket_name, bucket_stats in data['buckets'].items():
-            metric_tags = ['bucket:{}'.format(bucket_name), 'device:{}'.format(bucket_name)]
+            metric_tags = [f'bucket:{bucket_name}', f'device:{bucket_name}']
             metric_tags.extend(self._tags)
             for metric_name, val in bucket_stats.items():
                 if val is not None:
                     norm_metric_name = self.camel_case_to_joined_lower(metric_name)
                     if norm_metric_name in BUCKET_STATS:
-                        full_metric_name = 'couchbase.by_bucket.{}'.format(norm_metric_name)
+                        full_metric_name = f'couchbase.by_bucket.{norm_metric_name}'
                         self.gauge(full_metric_name, val[0], tags=metric_tags)
 
         # Get node metrics
         for node_name, node_stats in data['nodes'].items():
-            metric_tags = ['node:{}'.format(node_name), 'device:{}'.format(node_name)]
+            metric_tags = [f'node:{node_name}', f'device:{node_name}']
             metric_tags.extend(self._tags)
             for metric_name, val in node_stats['interestingStats'].items():
                 if val is not None:
-                    metric_name = 'couchbase.by_node.{}'.format(self.camel_case_to_joined_lower(metric_name))
+                    metric_name = f'couchbase.by_node.{self.camel_case_to_joined_lower(metric_name)}'
                     self.gauge(metric_name, val, tags=metric_tags)
 
             # Get cluster health data
@@ -99,7 +99,7 @@ class Couchbase(AgentCheck):
                     if isinstance(val, string_types):
                         val = self.extract_seconds_value(val)
 
-                    full_metric_name = 'couchbase.query.{}'.format(self.camel_case_to_joined_lower(norm_metric_name))
+                    full_metric_name = f'couchbase.query.{self.camel_case_to_joined_lower(norm_metric_name)}'
                     self.gauge(full_metric_name, val, tags=self._tags)
 
         # Get tasks, we currently only care about 'rebalance' tasks
@@ -146,7 +146,7 @@ class Couchbase(AgentCheck):
         """
 
         # Tags for service check
-        cluster_health_tags = list(self._tags) + ['node:{}'.format(node_name)]
+        cluster_health_tags = list(self._tags) + [f'node:{node_name}']
 
         # Get the membership status of the node
         cluster_membership = node_stats.get('clusterMembership', None)
@@ -162,8 +162,8 @@ class Couchbase(AgentCheck):
         """
         Create an event object
         """
-        msg_title = 'Couchbase {}: {}'.format(self._server, msg_title)
-        msg = 'Couchbase instance {} {}'.format(self._server, msg)
+        msg_title = f'Couchbase {self._server}: {msg_title}'
+        msg = f'Couchbase instance {self._server} {msg}'
 
         return {
             'timestamp': int(time.time()),
@@ -198,9 +198,7 @@ class Couchbase(AgentCheck):
             self.log.debug(str(e))
 
     def _collect_version(self, data):
-        nodes = data['stats']['nodes']
-
-        if nodes:
+        if nodes := data['stats']['nodes']:
             # Mixed version clusters are discouraged and are therefore rare, see:
             # https://forums.couchbase.com/t/combining-multiple-versions-in-one-cluster/8782/5
             version = nodes[0]['version']
@@ -216,11 +214,8 @@ class Couchbase(AgentCheck):
             self.set_metadata('version', self._version)
 
     def get_data(self):
-        # The dictionary to be returned.
-        couchbase = {'stats': None, 'buckets': {}, 'nodes': {}, 'query': {}, 'tasks': {}}
-
         # build couchbase stats entry point
-        url = '{}{}'.format(self._server, COUCHBASE_STATS_PATH)
+        url = f'{self._server}{COUCHBASE_STATS_PATH}'
 
         # Fetch initial stats and capture a service check based on response.
         service_check_tags = self._tags
@@ -232,7 +227,7 @@ class Couchbase(AgentCheck):
             overall_stats = self._get_stats(url)
             # No overall stats? bail out now
             if overall_stats is None:
-                raise Exception("No data returned from couchbase endpoint: {}".format(url))
+                raise Exception(f"No data returned from couchbase endpoint: {url}")
         except requests.exceptions.HTTPError as e:
             self.service_check(SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=service_check_tags, message=str(e))
             raise
@@ -242,8 +237,13 @@ class Couchbase(AgentCheck):
         else:
             self.service_check(SERVICE_CHECK_NAME, AgentCheck.OK, tags=service_check_tags)
 
-        couchbase['stats'] = overall_stats
-
+        couchbase = {
+            'buckets': {},
+            'nodes': {},
+            'query': {},
+            'tasks': {},
+            'stats': overall_stats,
+        }
         nodes = overall_stats['nodes']
 
         # Next, get all the nodes
@@ -254,7 +254,7 @@ class Couchbase(AgentCheck):
         # Next, get all buckets .
         endpoint = overall_stats['buckets']['uri']
 
-        url = '{}{}'.format(self._server, endpoint)
+        url = f'{self._server}{endpoint}'
         buckets = self._get_stats(url)
 
         if buckets is not None:
@@ -263,12 +263,12 @@ class Couchbase(AgentCheck):
 
                 # Fetch URI for the stats bucket
                 endpoint = bucket['stats']['uri']
-                url = '{}{}'.format(self._server, endpoint)
+                url = f'{self._server}{endpoint}'
 
                 try:
                     bucket_stats = self._get_stats(url)
                 except requests.exceptions.HTTPError:
-                    url_backup = '{}/pools/nodes/buckets/{}/stats'.format(self._server, bucket_name)
+                    url_backup = f'{self._server}/pools/nodes/buckets/{bucket_name}/stats'
                     bucket_stats = self._get_stats(url_backup)
 
                 bucket_samples = bucket_stats['op']['samples']
@@ -281,7 +281,7 @@ class Couchbase(AgentCheck):
             couchbase['query'] = query_data
 
         # Next, get all the tasks
-        tasks_url = '{}{}/tasks'.format(self._server, COUCHBASE_STATS_PATH)
+        tasks_url = f'{self._server}{COUCHBASE_STATS_PATH}/tasks'
         try:
             tasks = self._get_stats(tasks_url)
             for task in tasks:
@@ -312,9 +312,8 @@ class Couchbase(AgentCheck):
 
     def _get_query_monitoring_data(self):
         query_data = None
-        query_monitoring_url = self.instance.get('query_monitoring_url')
-        if query_monitoring_url:
-            url = '{}{}'.format(query_monitoring_url, COUCHBASE_VITALS_PATH)
+        if query_monitoring_url := self.instance.get('query_monitoring_url'):
+            url = f'{query_monitoring_url}{COUCHBASE_VITALS_PATH}'
             try:
                 query_data = self._get_stats(url)
             except requests.exceptions.RequestException:
@@ -327,11 +326,11 @@ class Couchbase(AgentCheck):
         return query_data
 
     def _collect_sync_gateway_metrics(self):
-        url = '{}{}'.format(self._sync_gateway_url, SG_METRICS_PATH)
+        url = f'{self._sync_gateway_url}{SG_METRICS_PATH}'
         try:
             data = self._get_stats(url).get('syncgateway', {})
         except requests.exceptions.RequestException as e:
-            msg = "Error accessing the Sync Gateway monitoring endpoint %s: %s," % (url, str(e))
+            msg = f"Error accessing the Sync Gateway monitoring endpoint {url}: {str(e)},"
             self.log.debug(msg)
             self.service_check(SG_SERVICE_CHECK_NAME, AgentCheck.CRITICAL, msg, self._tags)
             return
@@ -347,7 +346,7 @@ class Couchbase(AgentCheck):
 
         per_db_stats = data.get('per_db', {})
         for db, db_groups in per_db_stats.items():
-            db_tags = ['db:{}'.format(db)] + self._tags
+            db_tags = [f'db:{db}'] + self._tags
             for subgroup, db_metrics in db_groups.items():
                 self.log.debug("Submitting metrics for group `%s`: `%s`", subgroup, db_metrics)
                 for mname, mval in db_metrics.items():
@@ -367,12 +366,9 @@ class Couchbase(AgentCheck):
             for cfname, cfval in mval.items():
                 self.monotonic_count('.'.join([namespace, mname, cfname]), cfval, tags)
         elif prefix == 'gsi_views':
-            # gsi view metrics are formatted with design doc and views `sync_gateway_2.1.access_query_count`
-            # parse design doc as tag and submit rest as a metric
-            match = re.match(r'\{([^}:;]+)\}-(\w+):', mname)
-            if match:
+            if match := re.match(r'\{([^}:;]+)\}-(\w+):', mname):
                 design_doc_tag = match.groups()[0]
-                gsi_tags = ['design_doc_name:{}'.format(design_doc_tag)] + tags
+                gsi_tags = [f'design_doc_name:{design_doc_tag}'] + tags
                 ddname = match.groups()[0]
                 self.monotonic_count('.'.join([namespace, ddname]), tags=gsi_tags)
 
@@ -421,7 +417,7 @@ class Couchbase(AgentCheck):
         try:
             data = self._get_stats(url)
         except requests.exceptions.RequestException as e:
-            msg = "Error accessing the Index Statistics endpoint: %s: %s" % (url, str(e))
+            msg = f"Error accessing the Index Statistics endpoint: {url}: {str(e)}"
             self.log.warning(msg)
             self.service_check(INDEX_STATS_SERVICE_CHECK_NAME, AgentCheck.CRITICAL, self._tags, msg)
             return
@@ -453,22 +449,14 @@ class Couchbase(AgentCheck):
         elif len(tag_arr) == 4:
             bucket, scope, collection, index_name = tag_arr
         else:
-            # Catch all incase the keyspace has either none or 3 or more separators(':')
-            # There is a documented example of partition-num being a possible keyspace:
-            # https://docs.couchbase.com/server/current/rest-api/rest-index-stats.html#_get_index_stats
-            # But we shouldn't encounter this since we don't query the index api with the needed params
-            # (Version 1.19.0+ of the Couchbase check)
-            formatted_tags = []
             self.log.debug("Unable to extract tags from keyspace: %s", keyspace)
-            return formatted_tags
-
-        formatted_tags = [
-            'bucket:{}'.format(bucket),
-            'scope:{}'.format(scope),
-            'collection:{}'.format(collection),
-            'index_name:{}'.format(index_name),
+            return []
+        return [
+            f'bucket:{bucket}',
+            f'scope:{scope}',
+            f'collection:{collection}',
+            f'index_name:{index_name}',
         ]
-        return formatted_tags
 
     def _submit_index_node_metrics(self, mname, mval):
         namespace = 'couchbase.indexer'

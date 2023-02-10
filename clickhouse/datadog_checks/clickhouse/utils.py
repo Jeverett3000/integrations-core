@@ -17,10 +17,7 @@ class ErrorSanitizer(object):
         return STACK_TRACE_LEFTOVER.sub('', error)
 
     def scrub(self, error):
-        if self.password:
-            return error.replace(self.password, '**********')
-
-        return error
+        return error.replace(self.password, '**********') if self.password else error
 
 
 def compact_query(query):

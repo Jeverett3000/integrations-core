@@ -42,6 +42,6 @@ def test_config(test_case, extra_config, expected_http_kwargs):
             verify=mock.ANY,
             allow_redirects=mock.ANY,
         )
-        http_wargs.update(expected_http_kwargs)
+        http_wargs |= expected_http_kwargs
 
-        r.get.assert_called_with('http://{}:5984/_all_dbs/'.format(common.HOST), **http_wargs)
+        r.get.assert_called_with(f'http://{common.HOST}:5984/_all_dbs/', **http_wargs)

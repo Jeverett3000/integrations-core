@@ -110,12 +110,10 @@ def create_trello_card(pull_request):
         else:
             card_url = response.json().get('url')
             exit_success(f'Created card: {card_url}')
-    else:
-        exit_failure('Too many card creation attempts')
+    exit_failure('Too many card creation attempts')
 
 
 def handle_trello_api(params):
-    rate_limited = False
     error = ''
     response = None
 
@@ -129,10 +127,7 @@ def handle_trello_api(params):
         except Exception as e:
             error = str(e)
 
-    # Rate limit
-    if response:
-        rate_limited = response.status_code == 429
-
+    rate_limited = response.status_code == 429 if response else False
     return rate_limited, error, response
 
 
@@ -165,16 +160,15 @@ def get_latest_pr():
             pr_data = response.json()
             try:
                 pr_data = pr_data.get('items', [{}])[0]
-            # Commit to master
             except IndexError:
-                pr_data = {'html_url': 'https://github.com/DataDog/{}/commit/{}'.format(REPO, commit_hash)}
+                pr_data = {
+                    'html_url': f'https://github.com/DataDog/{REPO}/commit/{commit_hash}'
+                }
             return pr_data
-    else:
-        exit_failure(f'Too many retries for: {url}')
+    exit_failure(f'Too many retries for: {url}')
 
 
 def handle_github_api(url):
-    rate_limited = False
     error = None
     response = None
 
@@ -188,10 +182,7 @@ def handle_github_api(url):
         except Exception as e:
             error = str(e)
 
-    # Rate limit
-    if response:
-        rate_limited = response.status_code == 403
-
+    rate_limited = response.status_code == 403 if response else False
     return rate_limited, error, response
 
 

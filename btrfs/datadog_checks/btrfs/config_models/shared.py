@@ -38,10 +38,11 @@ class SharedConfig(BaseModel):
 
     @validator('*')
     def _run_validations(cls, v, field):
-        if not v:
-            return v
-
-        return getattr(validators, f'shared_{field.name}', identity)(v, field=field)
+        return (
+            getattr(validators, f'shared_{field.name}', identity)(v, field=field)
+            if v
+            else v
+        )
 
     @root_validator(pre=False)
     def _final_validation(cls, values):

@@ -54,13 +54,11 @@ def dd_environment(e2e_instance):
                 ).format(path)
                 raise RuntimeError(message)
 
-        env_vars.update(
-            {
-                "E2E_IOT_EDGE_ROOT_CA_CERT": common.E2E_IOT_EDGE_ROOT_CA_CERT,
-                "E2E_IOT_EDGE_DEVICE_CA_CERT": common.E2E_IOT_EDGE_DEVICE_CA_CERT,
-                "E2E_IOT_EDGE_DEVICE_CA_PK": common.E2E_IOT_EDGE_DEVICE_CA_PK,
-            }
-        )
+        env_vars |= {
+            "E2E_IOT_EDGE_ROOT_CA_CERT": common.E2E_IOT_EDGE_ROOT_CA_CERT,
+            "E2E_IOT_EDGE_DEVICE_CA_CERT": common.E2E_IOT_EDGE_DEVICE_CA_CERT,
+            "E2E_IOT_EDGE_DEVICE_CA_PK": common.E2E_IOT_EDGE_DEVICE_CA_PK,
+        }
 
     up = e2e_utils.IoTEdgeUp(compose_file, network_name=common.E2E_NETWORK)
     down = e2e_utils.IoTEdgeDown(compose_file, stop_extra_containers=common.E2E_EXTRA_SPAWNED_CONTAINERS)

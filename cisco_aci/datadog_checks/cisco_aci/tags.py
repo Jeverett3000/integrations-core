@@ -36,11 +36,10 @@ class CiscoTags:
         app_name = attrs.get('name')
         dn = attrs.get('dn')
         if app_name:
-            tags.append("application:" + app_name)
+            tags.append(f"application:{app_name}")
         if dn:
-            tenant = re.search(TN_REGEX, dn)
-            if tenant:
-                tags.append("tenant:" + tenant.group(1))
+            if tenant := re.search(TN_REGEX, dn):
+                tags.append(f"tenant:{tenant[1]}")
         return tags
 
     def _edpt_tags_map(self, edpt):
@@ -53,16 +52,14 @@ class CiscoTags:
         epg_name = attrs.get('name')
         dn = attrs.get('dn')
         if epg_name:
-            tags_map["endpoint_group"] = "" + epg_name  # type enforcement
+            tags_map["endpoint_group"] = f"{epg_name}"
         if dn:
-            tenant = re.search(TN_REGEX, dn)
-            if tenant:
-                tenant_name = tenant.group(1)
+            if tenant := re.search(TN_REGEX, dn):
+                tenant_name = tenant[1]
                 tags_map["tenant"] = tenant_name
 
-            app = re.search(APP_REGEX, dn)
-            if app:
-                app_name = app.group(1)
+            if app := re.search(APP_REGEX, dn):
+                app_name = app[1]
                 tags_map["application"] = app_name
         return tags_map
 
@@ -73,19 +70,15 @@ class CiscoTags:
         attrs = epg_meta.get('attributes', {})
         if type(attrs) is not dict:
             return tags_map
-        ip = attrs.get('ip')
-        if ip:
+        if ip := attrs.get('ip'):
             tags_map["ip"] = ip
-        mac = attrs.get('mac')
-        if mac:
+        if mac := attrs.get('mac'):
             tags_map["mac"] = mac
-        encap = attrs.get('encap')
-        if encap:
+        if encap := attrs.get('encap'):
             tags_map["encap"] = encap
         return tags_map
 
     def _get_epg_meta_tags_map(self, tenant_name, app_name, epg_name):
-        tags_map = {}
         try:
             epg_metas = self.api.get_epg_meta(tenant_name, app_name, epg_name)
             if len(epg_metas) > 0 and epg_metas[0] and type(epg_metas[0]) is dict:
@@ -94,27 +87,21 @@ class CiscoTags:
         except (exceptions.APIConnectionException, exceptions.APIParsingException):
             # the exception will already be logged, just pass it over here
             pass
-        return tags_map
+        return {}
 
     def _tenant_mapper(self, edpt):
         tags = []
         if not edpt or type(edpt) is not dict:
             return tags
 
-        application_meta = []
         application_meta_map = self._edpt_tags_map(edpt)
-        for k, v in iteritems(application_meta_map):
-            application_meta.append(k + ":" + v)
+        application_meta = [f"{k}:{v}" for k, v in iteritems(application_meta_map)]
         tenant_name = application_meta_map.get("tenant")
         app_name = application_meta_map.get("application")
         epg_name = application_meta_map.get("endpoint_group")
 
-        # adding meta tags
-        endpoint_meta = []
         endpoint_meta_map = self._get_epg_meta_tags_map(tenant_name, app_name, epg_name)
-        for k, v in iteritems(endpoint_meta_map):
-            endpoint_meta.append(k + ":" + v)
-
+        endpoint_meta = [f"{k}:{v}" for k, v in iteritems(endpoint_meta_map)]
         # adding application tags
         endpoint_meta += application_meta
 
@@ -131,18 +118,18 @@ class CiscoTags:
                     port = re.search(r'/pathep-\[(.+?)\]', eth_attrs.get('tDn', ''))
                     if not port:
                         continue
-                    eth_tag = 'port:' + port.group(1)
+                    eth_tag = f'port:{port[1]}'
                     if eth_tag not in eth_meta:
                         eth_meta.append(eth_tag)
                     node = re.search('/paths-(.+?)/', eth_attrs.get('tDn', ''))
                     if not node:
                         continue
-                    eth_node = 'node_id:' + node.group(1)
+                    eth_node = f'node_id:{node[1]}'
                     if eth_node not in eth_meta:
                         eth_meta.append(eth_node)
                     # populating the map for eth-app mapping
 
-                    tenant_fabric_key = node.group(1) + ":" + port.group(1)
+                    tenant_fabric_key = f"{node[1]}:{port[1]}"
                     if tenant_fabric_key not in self.tenant_farbic_mapper:
                         self.tenant_farbic_mapper[tenant_fabric_key] = application_meta
                     else:
@@ -182,9 +169,8 @@ class CiscoTags:
                 tags.append("fabric_state:" + obj.get('fabricSt'))
             if helpers.get_pod_from_dn(obj.get('dn')):
                 tags.append("fabric_pod_id:" + helpers.get_pod_from_dn(obj.get('dn')))
-        if obj_type == 'fabricPod':
-            if obj.get('id'):
-                tags.append("fabric_pod_id:" + obj.get('id'))
+        if obj_type == 'fabricPod' and obj.get('id'):
+            tags.append("fabric_pod_id:" + obj.get('id'))
         if obj_type == 'l1PhysIf':
             if obj.get('id'):
                 tags.append("port:" + obj.get('id'))
@@ -195,12 +181,12 @@ class CiscoTags:
             node_id = helpers.get_node_from_dn(obj.get('dn'))
             pod_id = helpers.get_pod_from_dn(obj.get('dn'))
             if node_id:
-                tags.append("node_id:" + node_id)
+                tags.append(f"node_id:{node_id}")
             if pod_id:
-                tags.append("fabric_pod_id:" + pod_id)
-            key = node_id + ":" + obj.get('id')
+                tags.append(f"fabric_pod_id:{pod_id}")
+            key = f"{node_id}:" + obj.get('id')
             if key in self.tenant_farbic_mapper.keys():
-                tags = tags + self.tenant_farbic_mapper[key]
+                tags += self.tenant_farbic_mapper[key]
         return tags
 
     @property

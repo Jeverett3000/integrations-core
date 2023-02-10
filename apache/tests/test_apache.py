@@ -59,7 +59,7 @@ def test_check(aggregator, check):
     for mname in APACHE_GAUGES + APACHE_RATES:
         aggregator.assert_metric(mname, tags=tags, count=1)
 
-    sc_tags = ['apache_host:' + HOST, 'port:' + PORT] + tags
+    sc_tags = [f'apache_host:{HOST}', f'port:{PORT}'] + tags
     aggregator.assert_service_check('apache.can_connect', Apache.OK, tags=sc_tags)
 
     aggregator.assert_all_metrics_covered()
@@ -76,7 +76,7 @@ def test_check_auto(aggregator, check):
     for mname in APACHE_GAUGES + APACHE_RATES:
         aggregator.assert_metric(mname, tags=tags, count=1)
 
-    sc_tags = ['apache_host:' + HOST, 'port:' + PORT] + tags
+    sc_tags = [f'apache_host:{HOST}', f'port:{PORT}'] + tags
     aggregator.assert_service_check('apache.can_connect', Apache.OK, tags=sc_tags)
 
     aggregator.assert_all_metrics_covered()
@@ -90,7 +90,7 @@ def test_e2e(dd_agent_check):
     for mname in APACHE_GAUGES + APACHE_RATES:
         aggregator.assert_metric(mname, tags=tags)
 
-    sc_tags = ['apache_host:' + HOST, 'port:' + PORT] + tags
+    sc_tags = [f'apache_host:{HOST}', f'port:{PORT}'] + tags
     aggregator.assert_service_check('apache.can_connect', Apache.OK, tags=sc_tags)
 
     aggregator.assert_all_metrics_covered()
@@ -172,7 +172,7 @@ def test_full_version_regex(check, version, expected_parts, datadog_agent):
 
     check._submit_metadata(version)
 
-    version_metadata = {'version.{}'.format(k): v for k, v in list(expected_parts.items())}
+    version_metadata = {f'version.{k}': v for k, v in list(expected_parts.items())}
     if expected_parts:
         version_metadata['version.scheme'] = 'semver'
 

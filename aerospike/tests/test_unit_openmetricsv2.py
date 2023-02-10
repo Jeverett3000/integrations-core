@@ -27,7 +27,8 @@ def test_openmetricsv2_check(aggregator, dd_run_check, instance_openmetrics_v2, 
         aggregator.assert_metric(metric_name)
 
         aggregator.assert_metric_has_tag(
-            metric_name, 'endpoint:{}'.format(instance_openmetrics_v2.get('openmetrics_endpoint'))
+            metric_name,
+            f"endpoint:{instance_openmetrics_v2.get('openmetrics_endpoint')}",
         )
         aggregator.assert_metric_has_tag(metric_name, 'aerospike_cluster:null')
         aggregator.assert_metric_has_tag(metric_name, 'aerospike_service:192.168.32.3:3000')

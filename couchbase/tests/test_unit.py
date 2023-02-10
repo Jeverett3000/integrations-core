@@ -27,9 +27,9 @@ def test_camel_case_to_joined_lower(instance):
 
     for test_input, expected_output in CAMEL_CASE_TEST_PAIRS.items():
         test_output = couchbase.camel_case_to_joined_lower(test_input)
-        assert test_output == expected_output, 'Input was {}, expected output was {}, actual output was {}'.format(
-            test_input, expected_output, test_output
-        )
+        assert (
+            test_output == expected_output
+        ), f'Input was {test_input}, expected output was {expected_output}, actual output was {test_output}'
 
 
 def test_extract_seconds_value(instance):
@@ -45,9 +45,9 @@ def test_extract_seconds_value(instance):
 
     for test_input, expected_output in EXTRACT_SECONDS_TEST_PAIRS.items():
         test_output = couchbase.extract_seconds_value(test_input)
-        assert test_output == expected_output, 'Input was {}, expected output was {}, actual output was {}'.format(
-            test_input, expected_output, test_output
-        )
+        assert (
+            test_output == expected_output
+        ), f'Input was {test_input}, expected output was {expected_output}, actual output was {test_output}'
 
 
 def test__get_query_monitoring_data(instance_query):
@@ -89,7 +89,7 @@ def test_config(test_case, dd_run_check, extra_config, expected_http_kwargs, ins
             verify=mock.ANY,
             allow_redirects=mock.ANY,
         )
-        http_wargs.update(expected_http_kwargs)
+        http_wargs |= expected_http_kwargs
         r.get.assert_called_with('http://localhost:8091/pools/default/tasks', **http_wargs)
 
 

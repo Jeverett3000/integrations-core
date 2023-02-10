@@ -59,11 +59,11 @@ def test_recover_from_expired_token(aggregator, api_kwargs):
     assert data == {"foo": "bar"}
 
     get_calls = http.get._mock_call_args_list
-    post_calls = http.post._mock_call_args_list
-
     # Assert that the first call was to the ACI_URL
     assert get_calls[0].args[0] == common.ACI_URL
     if 'password' in api_kwargs:
+        post_calls = http.post._mock_call_args_list
+
         # Assert that the second call was to the login endpoint
         assert 'aaaLogin.xml' in post_calls[0].args[0]
 

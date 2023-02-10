@@ -17,8 +17,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.usefixtures('dd_environment')
 def test_check(aggregator, instance, dd_run_check):
     check = ClickhouseCheck('clickhouse', {}, [instance])
     dd_run_check(check)
-    server_tag = 'server:{}'.format(instance['server'])
-    port_tag = 'port:{}'.format(instance['port'])
+    server_tag = f"server:{instance['server']}"
+    port_tag = f"port:{instance['port']}"
     metrics = get_metrics(CLICKHOUSE_VERSION)
 
     for metric in metrics:
@@ -93,8 +93,8 @@ def test_custom_queries(aggregator, instance, dd_run_check):
         'clickhouse.settings.changed',
         metric_type=0,
         tags=[
-            'server:{}'.format(instance['server']),
-            'port:{}'.format(instance['port']),
+            f"server:{instance['server']}",
+            f"port:{instance['port']}",
             'db:default',
             'foo:bar',
             'test:clickhouse',

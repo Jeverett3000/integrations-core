@@ -80,7 +80,9 @@ class CloudFoundryApiCheck(AgentCheck):
 
         links = payload.get("links")
         if not links:
-            raise CheckException("Unable to inspect API information from payload {}".format(payload))
+            raise CheckException(
+                f"Unable to inspect API information from payload {payload}"
+            )
 
         api_v3_version = "0.0.0"
         try:
@@ -91,7 +93,9 @@ class CloudFoundryApiCheck(AgentCheck):
         try:
             uaa_url = links["uaa"]["href"]
         except Exception:
-            raise CheckException("Unable to collect API version and/or UAA URL from links {}".format(links))
+            raise CheckException(
+                f"Unable to collect API version and/or UAA URL from links {links}"
+            )
 
         api_version = "v2"
         if semver.parse_version_info(api_v3_version) >= MIN_V3_VERSION:
@@ -105,8 +109,8 @@ class CloudFoundryApiCheck(AgentCheck):
             return
         self.log.info("Refreshing access token")
         sc_tags = [
-            "uaa_url:{}".format(urlparse(self._uaa_url)[1]),
-            "api_url:{}".format(urlparse(self._api_url)[1]),
+            f"uaa_url:{urlparse(self._uaa_url)[1]}",
+            f"api_url:{urlparse(self._api_url)[1]}",
         ] + self._tags
         try:
             res = self.http.get(
@@ -137,7 +141,7 @@ class CloudFoundryApiCheck(AgentCheck):
 
     def get_auth_header(self):
         self.get_oauth_token()
-        return {"Authorization": "Bearer {}".format(self._oauth_token)}
+        return {"Authorization": f"Bearer {self._oauth_token}"}
 
     def get_orgs(self):
         orgs = {}
@@ -173,23 +177,22 @@ class CloudFoundryApiCheck(AgentCheck):
     def get_org_name(self, org_guid):
         if org_guid in self._orgs:
             return self._orgs[org_guid]
-        else:
-            self.log.debug("Orgs cache miss for %s, fetching from CC API...", org_guid)
-            headers = self.get_auth_header()
-            url = join_url(self._api_url, "{}/organizations/{}".format(self._api_version, org_guid))
-            try:
-                res = self.http.get(url, headers=headers)
-                res.raise_for_status()
-                payload = res.json()
-                org_name = ""
-                if self._api_version == "v2":
-                    org_name = payload["entity"]["name"]
-                elif self._api_version == "v3":
-                    org_name = payload["name"]
-                self._orgs[org_guid] = org_name
-                return org_name
-            except Exception:
-                self.log.exception("Error getting org name for org %s", org_guid)
+        self.log.debug("Orgs cache miss for %s, fetching from CC API...", org_guid)
+        headers = self.get_auth_header()
+        url = join_url(self._api_url, f"{self._api_version}/organizations/{org_guid}")
+        try:
+            res = self.http.get(url, headers=headers)
+            res.raise_for_status()
+            payload = res.json()
+            org_name = ""
+            if self._api_version == "v2":
+                org_name = payload["entity"]["name"]
+            elif self._api_version == "v3":
+                org_name = payload["name"]
+            self._orgs[org_guid] = org_name
+            return org_name
+        except Exception:
+            self.log.exception("Error getting org name for org %s", org_guid)
 
     def get_spaces(self):
         spaces = {}
@@ -226,28 +229,27 @@ class CloudFoundryApiCheck(AgentCheck):
     def get_space_name(self, space_guid):
         if space_guid in self._spaces:
             return self._spaces[space_guid]
-        else:
-            self.log.debug("Spaces cache miss for %s, fetching from CC API...", space_guid)
-            headers = self.get_auth_header()
-            url = join_url(self._api_url, "{}/spaces/{}".format(self._api_version, space_guid))
-            try:
-                res = self.http.get(url, headers=headers)
-                res.raise_for_status()
-                payload = res.json()
-                space_name = ""
-                if self._api_version == "v2":
-                    space_name = payload["entity"]["name"]
-                elif self._api_version == "v3":
-                    space_name = payload["name"]
-                self._spaces[space_guid] = space_name
-                return space_name
-            except Exception:
-                self.log.exception("Error getting space name for space %s", space_guid)
+        self.log.debug("Spaces cache miss for %s, fetching from CC API...", space_guid)
+        headers = self.get_auth_header()
+        url = join_url(self._api_url, f"{self._api_version}/spaces/{space_guid}")
+        try:
+            res = self.http.get(url, headers=headers)
+            res.raise_for_status()
+            payload = res.json()
+            space_name = ""
+            if self._api_version == "v2":
+                space_name = payload["entity"]["name"]
+            elif self._api_version == "v3":
+                space_name = payload["name"]
+            self._spaces[space_guid] = space_name
+            return space_name
+        except Exception:
+            self.log.exception("Error getting space name for space %s", space_guid)
 
     def scroll_api_pages(self, url, params, headers):
         # type: (str, Dict[str, Any], Dict[str, str]) -> Generator
         page = 1
-        sc_tags = ["api_url:{}".format(urlparse(self._api_url)[1])] + self._tags
+        sc_tags = [f"api_url:{urlparse(self._api_url)[1]}"] + self._tags
         raised = False
         # Wrap inside a try/finally to send the service check even if the generator stops being iterated
         try:
@@ -280,11 +282,10 @@ class CloudFoundryApiCheck(AgentCheck):
                     return
                 self.log.trace("Payload received from CC API: %s", payload)
                 yield payload
-                # Fetch next page if any
-                next_url = get_next_url(payload, self._api_version)
-                if not next_url:
+                if next_url := get_next_url(payload, self._api_version):
+                    page += 1
+                else:
                     break
-                page += 1
         finally:
             if not raised:
                 self.service_check(API_SERVICE_CHECK_NAME, CloudFoundryApiCheck.OK, tags=sc_tags)
@@ -323,7 +324,7 @@ class CloudFoundryApiCheck(AgentCheck):
         headers = self.get_auth_header()
         if self._api_version == "v2":
             params = {
-                "q": "type IN {}".format(self._event_filter),
+                "q": f"type IN {self._event_filter}",
                 "results-per-page": min(self._per_page, MAX_PAGE_SIZE_V2),
                 "order-direction": "desc",
                 "order-by": "timestamp",
@@ -409,43 +410,39 @@ class CloudFoundryApiCheck(AgentCheck):
         metadata,
     ):
         # type: (str, str, int, str, str, str, str, str, str, str, str, dict) -> Event
-        space_id = space_guid if space_guid else "none"
-        org_id = org_guid if org_guid else "none"
+        space_id = space_guid or "none"
+        org_id = org_guid or "none"
         # we include both space_guid+space_id and org_guid+org_id; the *_guid are kept for
         # backwards compatibility, the *_id are added to maintain consistency with
         # https://github.com/DataDog/datadog-firehose-nozzle
         tags = [
-            "event_type:{}".format(event_type),
-            "{}_name:{}".format(target_type, target_name),
-            "{}_guid:{}".format(target_type, target_guid),
-            "{}_name:{}".format(actor_type, actor_name),
-            "{}_guid:{}".format(actor_type, actor_guid),
-            "space_guid:{}".format(space_id),
-            "space_id:{}".format(space_id),
-            "space_name:{}".format(self.get_space_name(space_guid) if space_guid else "none"),
-            "org_guid:{}".format(org_id),
-            "org_id:{}".format(org_id),
-            "org_name:{}".format(self.get_org_name(org_guid) if org_guid else "none"),
+            f"event_type:{event_type}",
+            f"{target_type}_name:{target_name}",
+            f"{target_type}_guid:{target_guid}",
+            f"{actor_type}_name:{actor_name}",
+            f"{actor_type}_guid:{actor_guid}",
+            f"space_guid:{space_id}",
+            f"space_id:{space_id}",
+            f'space_name:{self.get_space_name(space_guid) if space_guid else "none"}',
+            f"org_guid:{org_id}",
+            f"org_id:{org_id}",
+            f'org_name:{self.get_org_name(org_guid) if org_guid else "none"}',
         ] + self._tags
         metadata_json = "```\n{}\n```".format(json.dumps(metadata, sort_keys=True, indent=2))
-        dd_event = {
+        return {
             "source_type_name": SOURCE_TYPE_NAME,
             "event_type": event_type,
             "timestamp": event_ts,
-            "msg_title": "Event {} happened for {} {}".format(event_type, target_type, target_name),
-            "msg_text": "%%% \n Triggered by {} {}\n\nMetadata:\n{} \n %%%".format(
-                actor_type, actor_name, metadata_json
-            ),
+            "msg_title": f"Event {event_type} happened for {target_type} {target_name}",
+            "msg_text": f"%%% \n Triggered by {actor_type} {actor_name}\n\nMetadata:\n{metadata_json} \n %%%",
             "priority": "normal",
             "tags": tags,
             "aggregation_key": event_guid,
-            # In case we send duplicates for any reason, they'll be aggregated in the app
         }
-        return dd_event
 
     def check(self, _):
         # type: (Dict[str, Any]) -> None
-        tags = ["api_url:{}".format(urlparse(self._api_url)[1])] + self._tags
+        tags = [f"api_url:{urlparse(self._api_url)[1]}"] + self._tags
         events = self.get_events()
         self.count("events.count", len(events), tags=tags)
         for event in events.values():

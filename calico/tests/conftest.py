@@ -53,12 +53,11 @@ def dd_environment():
             calico_host, calico_port = stack.enter_context(
                 port_forward(kubeconfig, 'kube-system', 9091, 'service', 'felix-metrics-svc')
             )
-            instance = {
-                "openmetrics_endpoint": 'http://{}:{}/metrics'.format(calico_host, calico_port),
+            yield {
+                "openmetrics_endpoint": f'http://{calico_host}:{calico_port}/metrics',
                 "namespace": NAMESPACE,
                 "extra_metrics": EXTRA_METRICS,
             }
-            yield instance
 
 
 @pytest.fixture

@@ -34,9 +34,9 @@ class SessionWrapper:
         self.appcenter = appcenter
 
         if self.appcenter:
-            self.certDn = 'uni/userext/appuser-{}/usercert-{}'.format(username, cert_name)
+            self.certDn = f'uni/userext/appuser-{username}/usercert-{cert_name}'
         else:
-            self.certDn = 'uni/userext/user-{}/usercert-{}'.format(username, cert_name)
+            self.certDn = f'uni/userext/user-{username}/usercert-{cert_name}'
 
         self.cert_key = cert_key
         if cert_key:
@@ -45,28 +45,23 @@ class SessionWrapper:
             )
 
     def login(self, password):
-        data = '<aaaUser name="{}" pwd="{}"/>\n'.format(self.username, password)
-        url = '{}/api/aaaLogin.xml'.format(self.aci_url)
+        data = f'<aaaUser name="{self.username}" pwd="{password}"/>\n'
+        url = f'{self.aci_url}/api/aaaLogin.xml'
         response = self.http.post(url, data=data, persist=True)
         response.raise_for_status()
-        self.apic_cookie = 'APIC-Cookie={}'.format(response.cookies.get('APIC-cookie'))
+        self.apic_cookie = f"APIC-Cookie={response.cookies.get('APIC-cookie')}"
 
     def make_request(self, path):
-        url = "{}{}".format(self.aci_url, path)
+        url = f"{self.aci_url}{path}"
 
         if self.apic_cookie:
             cookie = self.apic_cookie
         elif self.cert_key:
-            payload = 'GET{}'.format(path)
+            payload = f'GET{path}'
             signature = self.cert_key.sign(ensure_bytes(payload), padding.PKCS1v15(), hashes.SHA256())
 
             signature = base64.b64encode(signature)
-            cookie = (
-                'APIC-Request-Signature={}; '
-                'APIC-Certificate-Algorithm=v1.0; '
-                'APIC-Certificate-Fingerprint=fingerprint; '
-                'APIC-Certificate-DN={}'
-            ).format(signature, self.certDn)
+            cookie = f'APIC-Request-Signature={signature}; APIC-Certificate-Algorithm=v1.0; APIC-Certificate-Fingerprint=fingerprint; APIC-Certificate-DN={self.certDn}'
             cookie = cookie
         else:
             self.log.warning("The Cisco ACI Integration requires either a cert or a username and password")
@@ -79,12 +74,12 @@ class SessionWrapper:
             response.raise_for_status()
         except Exception as e:
             self.log.warning("Error making request: exception='%s' response.content='%s'", e, response.content)
-            raise APIConnectionException("Error making request: {}".format(e))
+            raise APIConnectionException(f"Error making request: {e}")
         try:
             return response.json()
         except Exception as e:
             self.log.warning("Exception in json parsing, returning nothing: %s", e)
-            raise APIParsingException("Error parsing request: {}".format(e))
+            raise APIParsingException(f"Error parsing request: {e}")
 
 
 class Api:
@@ -134,7 +129,7 @@ class Api:
         self.http.session.close()
 
     def setup_cert_login(self, aci_url):
-        session_wrapper = self.wrapper_factory(
+        return self.wrapper_factory(
             aci_url,
             self.http,
             cert_name=self.cert_name,
@@ -144,7 +139,6 @@ class Api:
             cert_key_password=self.cert_key_password,
             log=self.log,
         )
-        return session_wrapper
 
     def password_login(self, aci_url):
         session_wrapper = self.wrapper_factory(aci_url, self.http, username=self.username, log=self.log)
@@ -179,21 +173,21 @@ class Api:
             return self.sessions[aci_url].make_request(path)
 
     def get_apps(self, tenant):
-        path = "/api/mo/uni/tn-{}.json?query-target=subtree&target-subtree-class=fvAp".format(tenant)
+        path = f"/api/mo/uni/tn-{tenant}.json?query-target=subtree&target-subtree-class=fvAp"
         response = self.make_request(path)
         # return only the list of apps
         return self._parse_response(response)
 
     def get_app_stats(self, tenant, app):
-        path = "/api/mo/uni/tn-{}/ap-{}.json?rsp-subtree-include=stats,no-scoped".format(tenant, app)
+        path = f"/api/mo/uni/tn-{tenant}/ap-{app}.json?rsp-subtree-include=stats,no-scoped"
         response = self.make_request(path)
         # return only the list of stats
         return self._parse_response(response)
 
     def get_epgs(self, tenant, app):
-        path = "/api/mo/uni/tn-{}/ap-{}.json".format(tenant, app)
+        path = f"/api/mo/uni/tn-{tenant}/ap-{app}.json"
         query = '?query-target=subtree&target-subtree-class=fvAEPg'
-        path = path + query
+        path += query
         response = self.make_request(path)
 
         return self._parse_response(response)
@@ -223,7 +217,7 @@ class Api:
         return self._parse_response(response)
 
     def get_tenant_stats(self, tenant):
-        path = "/api/mo/uni/tn-{}.json?rsp-subtree-include=stats,no-scoped".format(tenant)
+        path = f"/api/mo/uni/tn-{tenant}.json?rsp-subtree-include=stats,no-scoped"
         response = self.make_request(path)
         # return only the list of stats
         return self._parse_response(response)
@@ -231,9 +225,9 @@ class Api:
     def get_tenant_events(self, tenant, page=0, page_size=15):
         query1 = 'rsp-subtree-include=event-logs,no-scoped,subtree'
         query2 = 'order-by=eventRecord.created|desc'
-        query3 = 'page={}&page-size={}'.format(page, page_size)
-        query = '{}&{}&{}'.format(query1, query2, query3)
-        path = "/api/node/mo/uni/tn-{}.json?{}".format(tenant, query)
+        query3 = f'page={page}&page-size={page_size}'
+        query = f'{query1}&{query2}&{query3}'
+        path = f"/api/node/mo/uni/tn-{tenant}.json?{query}"
         response = self.make_request(path)
         # return only the list of stats
         return self._parse_response(response)
@@ -244,13 +238,13 @@ class Api:
         return self._parse_response(response)
 
     def get_fabric_pod(self, pod):
-        path = '/api/mo/topology/pod-{}.json'.format(pod)
+        path = f'/api/mo/topology/pod-{pod}.json'
         response = self.make_request(path)
         return self._parse_response(response)
 
     def get_pod_stats(self, pod):
         query = 'rsp-subtree-include=stats,no-scoped&page-size=20'
-        path = '/api/mo/topology/pod-{}.json?{}'.format(pod, query)
+        path = f'/api/mo/topology/pod-{pod}.json?{query}'
         response = self.make_request(path)
         return self._parse_response(response)
 
@@ -260,13 +254,13 @@ class Api:
         return self._parse_response(response)
 
     def get_fabric_node(self, pod, node):
-        path = '/api/mo/topology/pod-{}/node-{}.json'.format(pod, node)
+        path = f'/api/mo/topology/pod-{pod}/node-{node}.json'
         response = self.make_request(path)
         return self._parse_response(response)
 
     def get_node_stats(self, pod, node):
         query = 'rsp-subtree-include=stats,no-scoped&page-size=20'
-        path = '/api/mo/topology/pod-{}/node-{}/sys.json?{}'.format(pod, node, query)
+        path = f'/api/mo/topology/pod-{pod}/node-{node}/sys.json?{query}'
         response = self.make_request(path)
         return self._parse_response(response)
 
@@ -290,13 +284,13 @@ class Api:
 
     def get_eth_list(self, pod, node):
         query = 'query-target=subtree&target-subtree-class=l1PhysIf'
-        path = '/api/mo/topology/pod-{}/node-{}/sys.json?{}'.format(pod, node, query)
+        path = f'/api/mo/topology/pod-{pod}/node-{node}/sys.json?{query}'
         response = self.make_request(path)
         return self._parse_response(response)
 
     def get_eth_stats(self, pod, node, eth):
         query = 'rsp-subtree-include=stats,no-scoped&page-size=50'
-        path = '/api/mo/topology/pod-{}/node-{}/sys/phys-[{}].json?{}'.format(pod, node, eth, query)
+        path = f'/api/mo/topology/pod-{pod}/node-{node}/sys/phys-[{eth}].json?{query}'
         response = self.make_request(path)
         return self._parse_response(response)
 
@@ -317,7 +311,7 @@ class Api:
     def get_apic_capacity_limits(self):
         base_path = "/api/mo/uni/fabric/compcat-default/fvsw-default/capabilities.json"
         query = "query-target=children&target-subtree-class=fvcapRule"
-        path = "{}?{}".format(base_path, query)
+        path = f"{base_path}?{query}"
         response = self.make_request(path)
         return self._parse_response(response)
 
@@ -325,7 +319,7 @@ class Api:
         if not query:
             query = "rsp-subtree-include=count"
         base_path = "/api/class/"
-        path = "{}{}.json?{}".format(base_path, capacity_metric, query)
+        path = f"{base_path}{capacity_metric}.json?{query}"
         response = self.make_request(path)
         return self._parse_response(response)
 
@@ -334,4 +328,4 @@ class Api:
             return response.get('imdata')
         except Exception as e:
             self.log.warning("Exception in fetching response data: %s", e)
-            raise APIParsingException("Exception in fetching response data: {}".format(e))
+            raise APIParsingException(f"Exception in fetching response data: {e}")

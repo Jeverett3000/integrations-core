@@ -70,16 +70,18 @@ def test_latest_metrics_supported(metrics, ignored_columns, metric_source_url):
 
     described_metrics = parse_described_metrics(metric_source_url)
 
-    difference = set(described_metrics).difference(metrics).difference(ignored_columns)
-
-    if difference:  # no cov
+    if (
+        difference := set(described_metrics)
+        .difference(metrics)
+        .difference(ignored_columns)
+    ):
         num_metrics = len(difference)
         raise AssertionError(
             '{} newly documented metric{}!\n{}'.format(
                 num_metrics,
                 's' if num_metrics > 1 else '',
                 '\n'.join(
-                    '---> {} | {}'.format(metric, ensure_csv_safe(described_metrics[metric]))
+                    f'---> {metric} | {ensure_csv_safe(described_metrics[metric])}'
                     for metric in sorted(difference)
                 ),
             )

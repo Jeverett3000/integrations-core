@@ -40,9 +40,16 @@ ASP_APP_INSTANCES = (
     '_LM_W3SVC_1_ROOT_owa',
 )
 
-PERFORMANCE_OBJECTS = {}
-for object_name, instances in (('ASP.NET', [None]), ('ASP.NET Applications', ASP_APP_INSTANCES[1:])):
-    PERFORMANCE_OBJECTS[object_name] = (
+PERFORMANCE_OBJECTS = {
+    object_name: (
         instances,
-        {counter: [9000] * len(instances) for counter in METRICS_CONFIG[object_name]['counters'][0]},
+        {
+            counter: [9000] * len(instances)
+            for counter in METRICS_CONFIG[object_name]['counters'][0]
+        },
     )
+    for object_name, instances in (
+        ('ASP.NET', [None]),
+        ('ASP.NET Applications', ASP_APP_INSTANCES[1:]),
+    )
+}

@@ -48,12 +48,12 @@ class AmbariCheck(AgentCheck):
 
     def get_clusters(self):
         clusters_endpoint = common.CLUSTERS_URL.format(base_url=self.base_url)
-        service_check_tags = self.base_tags + ["url:{}".format(self.base_url)]
+        service_check_tags = self.base_tags + [f"url:{self.base_url}"]
         resp = self._make_request(clusters_endpoint)
         if resp is None:
             self._submit_service_checks("can_connect", self.CRITICAL, service_check_tags)
             raise CheckException(
-                "Couldn't connect to URL: {}. Please verify the address is reachable".format(clusters_endpoint)
+                f"Couldn't connect to URL: {clusters_endpoint}. Please verify the address is reachable"
             )
 
         self._submit_service_checks("can_connect", self.OK, service_check_tags)
@@ -67,8 +67,7 @@ class AmbariCheck(AgentCheck):
 
         clusters = []
         for cluster in items:
-            c = cluster.get('Clusters')
-            if c:
+            if c := cluster.get('Clusters'):
                 clusters.append(c.get('cluster_name'))
 
         return clusters
@@ -134,7 +133,10 @@ class AmbariCheck(AgentCheck):
                 message = None
 
             self._submit_service_checks(
-                "state", service_check_state, service_tags + ['state:%s' % state], message=message
+                "state",
+                service_check_state,
+                service_tags + [f'state:{state}'],
+                message=message,
             )
 
     def get_component_metrics(self, cluster, service, base_tags, component_included):
@@ -198,19 +200,21 @@ class AmbariCheck(AgentCheck):
             self.warning("Couldn't connect to URL: %s with exception: %s.", url, e)
 
     def _submit_gauge(self, name, value, tags, hostname=None):
-        self.gauge('{}.{}'.format(common.METRIC_PREFIX, name), value, tags, hostname=hostname)
+        self.gauge(f'{common.METRIC_PREFIX}.{name}', value, tags, hostname=hostname)
 
     def _submit_service_checks(self, name, value, tags, message=None):
-        self.service_check('{}.{}'.format(common.METRIC_PREFIX, name), value, tags, message=message)
+        self.service_check(
+            f'{common.METRIC_PREFIX}.{name}', value, tags, message=message
+        )
 
     @classmethod
     def flatten_service_metrics(cls, metric_dict, prefix):
         flat_metrics = {}
         for raw_metric_name, metric_value in iteritems(metric_dict):
             if isinstance(metric_value, dict):
-                flat_metrics.update(cls.flatten_service_metrics(metric_value, prefix))
+                flat_metrics |= cls.flatten_service_metrics(metric_value, prefix)
             else:
-                metric_name = '{}.{}'.format(prefix, raw_metric_name) if prefix else raw_metric_name
+                metric_name = f'{prefix}.{raw_metric_name}' if prefix else raw_metric_name
                 flat_metrics[metric_name] = metric_value
         return flat_metrics
 
@@ -218,11 +222,11 @@ class AmbariCheck(AgentCheck):
     def flatten_host_metrics(cls, metric_dict, prefix=""):
         flat_metrics = {}
         for raw_metric_name, metric_value in iteritems(metric_dict):
-            metric_name = '{}.{}'.format(prefix, raw_metric_name) if prefix else raw_metric_name
+            metric_name = f'{prefix}.{raw_metric_name}' if prefix else raw_metric_name
             if raw_metric_name == "boottime":
                 flat_metrics["boottime"] = metric_value
             elif isinstance(metric_value, dict):
-                flat_metrics.update(cls.flatten_host_metrics(metric_value, metric_name))
+                flat_metrics |= cls.flatten_host_metrics(metric_value, metric_name)
             else:
                 flat_metrics[metric_name] = metric_value
         return flat_metrics

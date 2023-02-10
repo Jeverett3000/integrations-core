@@ -117,7 +117,7 @@ def couchbase_setup():
         'couchbase-cli',
         'bucket-create',
         '-c',
-        'localhost:{}'.format(PORT),
+        f'localhost:{PORT}',
         '-u',
         USER,
         '-p',
@@ -143,7 +143,7 @@ def couchbase_container():
         'couchbase-cli',
         'server-info',
         '-c',
-        'localhost:{}'.format(PORT),
+        f'localhost:{PORT}',
         '-u',
         USER,
         '-p',
@@ -165,9 +165,9 @@ def couchbase_init():
         'couchbase-cli',
         'cluster-init',
         '-c',
-        'localhost:{}'.format(PORT),
-        '--cluster-username={}'.format(USER),
-        '--cluster-password={}'.format(PASSWORD),
+        f'localhost:{PORT}',
+        f'--cluster-username={USER}',
+        f'--cluster-password={PASSWORD}',
         '--services',
         'data,index,fts,query',
         '--cluster-ramsize',
@@ -179,7 +179,7 @@ def couchbase_init():
     ]
     subprocess.check_call(init_args)
 
-    r = requests.get('{}/pools/default'.format(URL), auth=(USER, PASSWORD))
+    r = requests.get(f'{URL}/pools/default', auth=(USER, PASSWORD))
     return r.status_code == requests.codes.ok
 
 
@@ -197,7 +197,7 @@ def load_sample_bucket():
         CB_CONTAINER_NAME,
         'cbdocloader',
         '-c',
-        'localhost:{}'.format(PORT),
+        f'localhost:{PORT}',
         '-u',
         USER,
         '-p',
@@ -216,7 +216,7 @@ def node_stats():
     """
     Wait for couchbase to generate node stats
     """
-    r = requests.get('{}/pools/default'.format(URL), auth=(USER, PASSWORD))
+    r = requests.get(f'{URL}/pools/default', auth=(USER, PASSWORD))
     r.raise_for_status()
     stats = r.json()
     return all(len(node_stats['interestingStats']) > 0 for node_stats in stats['nodes'])
@@ -226,7 +226,10 @@ def bucket_stats():
     """
     Wait for couchbase to generate bucket stats
     """
-    r = requests.get('{}/pools/default/buckets/{}/stats'.format(URL, BUCKET_NAME), auth=(USER, PASSWORD))
+    r = requests.get(
+        f'{URL}/pools/default/buckets/{BUCKET_NAME}/stats',
+        auth=(USER, PASSWORD),
+    )
     r.raise_for_status()
     stats = r.json()
     return stats['op']['lastTStamp'] != 0

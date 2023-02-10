@@ -46,7 +46,7 @@ def build_metric(metric_name, logger):
         return None, None
 
     name = metric_parts[1]
-    additional_tags = ['citrix_hypervisor_{}:{}'.format(metric_parts[1], metric_parts[2])]
+    additional_tags = [f'citrix_hypervisor_{metric_parts[1]}:{metric_parts[2]}']
     found = False
 
     if SIMPLE_METRICS.get(metric_parts[-1]):
@@ -65,8 +65,10 @@ def build_metric(metric_name, logger):
             if len(tags_values) == len(regex['tags']):
                 found = True
                 name += str(regex['name'])
-                for i in range(len(regex['tags'])):
-                    additional_tags.append('{}:{}'.format(regex['tags'][i], tags_values[i]))
+                additional_tags.extend(
+                    f"{regex['tags'][i]}:{tags_values[i]}"
+                    for i in range(len(regex['tags']))
+                )
                 break
 
         if not found:

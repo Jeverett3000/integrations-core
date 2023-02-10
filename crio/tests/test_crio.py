@@ -34,13 +34,13 @@ def test_crio(aggregator, mock_data, instance):
 
     c = CrioCheck(CHECK_NAME, {}, [instance])
     c.check(instance)
-    aggregator.assert_metric(NAMESPACE + '.operations.count')
-    aggregator.assert_metric(NAMESPACE + '.operations.latency.count')
-    aggregator.assert_metric(NAMESPACE + '.operations.latency.sum')
-    aggregator.assert_metric(NAMESPACE + '.operations.latency.quantile')
-    aggregator.assert_metric(NAMESPACE + '.cpu.time')
-    aggregator.assert_metric(NAMESPACE + '.mem.resident')
-    aggregator.assert_metric(NAMESPACE + '.mem.virtual')
+    aggregator.assert_metric(f'{NAMESPACE}.operations.count')
+    aggregator.assert_metric(f'{NAMESPACE}.operations.latency.count')
+    aggregator.assert_metric(f'{NAMESPACE}.operations.latency.sum')
+    aggregator.assert_metric(f'{NAMESPACE}.operations.latency.quantile')
+    aggregator.assert_metric(f'{NAMESPACE}.cpu.time')
+    aggregator.assert_metric(f'{NAMESPACE}.mem.resident')
+    aggregator.assert_metric(f'{NAMESPACE}.mem.virtual')
     aggregator.assert_all_metrics_covered()
 
 

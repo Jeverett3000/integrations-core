@@ -27,9 +27,9 @@ def _assert_check(aggregator, assert_device_tag):
     # Metrics should have been emitted for any publicly readable databases.
     for db_name in common.DB_NAMES:
         for gauge in common.CHECK_GAUGES:
-            expected_tags = common.BASIC_CONFIG_TAGS + ["db:{}".format(db_name)]
+            expected_tags = common.BASIC_CONFIG_TAGS + [f"db:{db_name}"]
             if assert_device_tag:
-                expected_tags.append("device:{}".format(db_name))
+                expected_tags.append(f"device:{db_name}")
             aggregator.assert_metric(gauge, tags=expected_tags, count=1)
 
     # Check global metrics
@@ -52,7 +52,10 @@ def test_couch_inclusion(aggregator, check, instance, param_name):
     check.check({})
 
     for db_name in common.DB_NAMES:
-        expected_tags = ["db:{}".format(db_name), "device:{}".format(db_name)] + common.BASIC_CONFIG_TAGS
+        expected_tags = [
+            f"db:{db_name}",
+            f"device:{db_name}",
+        ] + common.BASIC_CONFIG_TAGS
         for gauge in common.CHECK_GAUGES:
             if db_name in DB_INCLUDE:
                 aggregator.assert_metric(gauge, tags=expected_tags, count=1)
@@ -70,7 +73,10 @@ def test_couch_exclusion(aggregator, check, instance, param_name):
     check.check({})
 
     for db_name in common.DB_NAMES:
-        expected_tags = common.BASIC_CONFIG_TAGS + ["db:{}".format(db_name), "device:{}".format(db_name)]
+        expected_tags = common.BASIC_CONFIG_TAGS + [
+            f"db:{db_name}",
+            f"device:{db_name}",
+        ]
         for gauge in common.CHECK_GAUGES:
             if db_name in DB_EXCLUDE:
                 aggregator.assert_metric(gauge, tags=expected_tags, count=0)

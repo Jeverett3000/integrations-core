@@ -96,13 +96,13 @@ def test_tagged_metrics(_, aggregator):
     ceph_check.check({})
 
     for osd in ['osd0', 'osd1', 'osd2']:
-        expected_tags = EXPECTED_TAGS + ['ceph_osd:%s' % osd]
+        expected_tags = EXPECTED_TAGS + [f'ceph_osd:{osd}']
 
         for metric in ['ceph.commit_latency_ms', 'ceph.apply_latency_ms']:
             aggregator.assert_metric(metric, count=1, tags=expected_tags)
 
     for pool in ['pool0', 'rbd']:
-        expected_tags = EXPECTED_TAGS + ['ceph_pool:%s' % pool]
+        expected_tags = EXPECTED_TAGS + [f'ceph_pool:{pool}']
 
         for metric in EXPECTED_METRICS_POOL_TAGS:
             aggregator.assert_metric(metric, count=1, tags=expected_tags)
@@ -115,7 +115,7 @@ def test_osd_perf_with_osdstats(_, aggregator):
     ceph_check.check({})
 
     for osd in ['osd0', 'osd1', 'osd2']:
-        expected_tags = EXPECTED_TAGS + ['ceph_osd:%s' % osd]
+        expected_tags = EXPECTED_TAGS + [f'ceph_osd:{osd}']
 
         for metric in ['ceph.commit_latency_ms', 'ceph.apply_latency_ms']:
             aggregator.assert_metric(metric, count=1, tags=expected_tags)
@@ -130,14 +130,14 @@ def test_osd_status_metrics(_, aggregator):
     expected_metrics = ['ceph.read_op_per_sec', 'ceph.write_op_per_sec', 'ceph.op_per_sec']
 
     for osd, pct_used in [('osd1', 94), ('osd2', 95)]:
-        expected_tags = EXPECTED_TAGS + ['ceph_osd:%s' % osd]
+        expected_tags = EXPECTED_TAGS + [f'ceph_osd:{osd}']
         aggregator.assert_metric('ceph.osd.pct_used', value=pct_used, count=1, tags=expected_tags)
 
     aggregator.assert_metric('ceph.num_full_osds', value=1, count=1, tags=EXPECTED_TAGS)
     aggregator.assert_metric('ceph.num_near_full_osds', value=1, count=1, tags=EXPECTED_TAGS)
 
     for pool in ['rbd', 'scbench']:
-        expected_tags = EXPECTED_TAGS + ['ceph_pool:%s' % pool]
+        expected_tags = EXPECTED_TAGS + [f'ceph_pool:{pool}']
         for metric in expected_metrics:
             aggregator.assert_metric(metric, count=1, tags=expected_tags)
 

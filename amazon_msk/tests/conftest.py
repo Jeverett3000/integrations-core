@@ -15,13 +15,7 @@ from . import common
 
 @pytest.fixture(scope='session')
 def dd_environment():
-    with docker_run(
-        common.COMPOSE_FILE,
-        endpoints=[
-            'http://{}:{}/metrics'.format(common.HOST, common.JMX_PORT),
-            'http://{}:{}/metrics'.format(common.HOST, common.NODE_PORT),
-        ],
-    ):
+    with docker_run(common.COMPOSE_FILE, endpoints=[f'http://{common.HOST}:{common.JMX_PORT}/metrics', f'http://{common.HOST}:{common.NODE_PORT}/metrics']):
         yield common.INSTANCE, common.E2E_METADATA
 
 

@@ -10,7 +10,7 @@ CHECK_NAME = 'activemq_xml'
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-URL = "http://{}:8161".format(get_docker_hostname())
+URL = f"http://{get_docker_hostname()}:8161"
 
 CONFIG = {'url': URL, 'username': "admin", 'password': "admin"}
 

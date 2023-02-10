@@ -37,20 +37,22 @@ def test_check(aggregator, mock_instance, dd_run_check):
 
     for metric, metric_type in common.MODULE_METRICS:
         for module_name in common.MODULES:
-            tags = common.TAGS + ['module_name:{}'.format(module_name)]
+            tags = common.TAGS + [f'module_name:{module_name}']
             aggregator.assert_metric(metric, metric_type=metric_type, count=1, tags=tags)
 
     aggregator.assert_service_check(
         'azure.iot_edge.edge_hub.prometheus.health',
         AzureIoTEdgeCheck.OK,
         count=1,
-        tags=common.CUSTOM_TAGS + ['endpoint:{}'.format(common.MOCK_EDGE_HUB_PROMETHEUS_URL)],
+        tags=common.CUSTOM_TAGS
+        + [f'endpoint:{common.MOCK_EDGE_HUB_PROMETHEUS_URL}'],
     )
     aggregator.assert_service_check(
         'azure.iot_edge.edge_agent.prometheus.health',
         AzureIoTEdgeCheck.OK,
         count=1,
-        tags=common.CUSTOM_TAGS + ['endpoint:{}'.format(common.MOCK_EDGE_AGENT_PROMETHEUS_URL)],
+        tags=common.CUSTOM_TAGS
+        + [f'endpoint:{common.MOCK_EDGE_AGENT_PROMETHEUS_URL}'],
     )
 
     aggregator.assert_all_metrics_covered()

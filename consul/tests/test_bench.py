@@ -21,6 +21,6 @@ def test_check_network_latency(benchmark, num_nodes):
     consul_check._last_known_leader = consul_mocks.mock_get_cluster_leader_A()
 
     agent_dc = consul_check._get_agent_datacenter()
-    tags = ['consul_datacenter:{}'.format(agent_dc)]
+    tags = [f'consul_datacenter:{agent_dc}']
 
     benchmark(consul_check.check_network_latency, agent_dc, tags)

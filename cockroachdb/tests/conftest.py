@@ -27,12 +27,12 @@ def dd_environment(instance):
 
 @pytest.fixture(scope='session')
 def instance_legacy():
-    return {'prometheus_url': 'http://{}:{}/_status/vars'.format(HOST, PORT)}
+    return {'prometheus_url': f'http://{HOST}:{PORT}/_status/vars'}
 
 
 @pytest.fixture(scope='session')
 def instance():
-    return {'openmetrics_endpoint': 'http://{}:{}/_status/vars'.format(HOST, PORT)}
+    return {'openmetrics_endpoint': f'http://{HOST}:{PORT}/_status/vars'}
 
 
 def _get_start_command():

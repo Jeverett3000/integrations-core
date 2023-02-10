@@ -138,30 +138,24 @@ class Fabric:
             if d.get("procCPUHist5min", {}).get('attributes'):
                 data = d.get("procCPUHist5min").get("attributes", {})
                 if data.get('index') == '0':
-                    value = data.get('currentAvg')
-                    if value:
+                    if value := data.get('currentAvg'):
                         self.gauge('cisco_aci.fabric.node.cpu.avg', value, tags=tags, hostname=hostname)
-                    value = data.get('currentMax')
-                    if value:
+                    if value := data.get('currentMax'):
                         self.gauge('cisco_aci.fabric.node.cpu.max', value, tags=tags, hostname=hostname)
-                    value = data.get('currentMin')
-                    if value:
+                    if value := data.get('currentMin'):
                         self.gauge('cisco_aci.fabric.node.cpu.min', value, tags=tags, hostname=hostname)
 
             if d.get("procSysCPUHist5min", {}).get('attributes'):
                 data = d.get("procSysCPUHist5min").get("attributes", {})
-                value = data.get('idleMax')
-                if value:
+                if value := data.get('idleMax'):
                     self.gauge('cisco_aci.fabric.node.cpu.idle.max', value, tags=tags, hostname=hostname)
                     not_idle = 100.0 - float(value)
                     self.gauge('cisco_aci.fabric.node.cpu.max', not_idle, tags=tags, hostname=hostname)
-                value = data.get('idleMin')
-                if value:
+                if value := data.get('idleMin'):
                     self.gauge('cisco_aci.fabric.node.cpu.idle.min', value, tags=tags, hostname=hostname)
                     not_idle = 100.0 - float(value)
                     self.gauge('cisco_aci.fabric.node.cpu.min', not_idle, tags=tags, hostname=hostname)
-                value = data.get('idleAvg')
-                if value:
+                if value := data.get('idleAvg'):
                     self.gauge('cisco_aci.fabric.node.cpu.idle.avg', value, tags=tags, hostname=hostname)
                     not_idle = 100.0 - float(value)
                     self.gauge('cisco_aci.fabric.node.cpu.avg', not_idle, tags=tags, hostname=hostname)
@@ -169,37 +163,28 @@ class Fabric:
             if d.get("procMemHist5min", {}).get('attributes'):
                 data = d.get("procMemHist5min").get("attributes", {})
                 if data.get('index') == '0':
-                    value = data.get('currentAvg')
-                    if value:
+                    if value := data.get('currentAvg'):
                         self.gauge('cisco_aci.fabric.node.mem.avg', value, tags=tags, hostname=hostname)
-                    value = data.get('currentMax')
-                    if value:
+                    if value := data.get('currentMax'):
                         self.gauge('cisco_aci.fabric.node.mem.max', value, tags=tags, hostname=hostname)
-                    value = data.get('currentMin')
-                    if value:
+                    if value := data.get('currentMin'):
                         self.gauge('cisco_aci.fabric.node.mem.min', value, tags=tags, hostname=hostname)
 
             if d.get("procSysMemHist5min", {}).get('attributes'):
                 data = d.get("procSysMemHist5min").get("attributes", {})
                 if data.get('index') == '0':
-                    value = data.get('usedAvg')
-                    if value:
+                    if value := data.get('usedAvg'):
                         self.gauge('cisco_aci.fabric.node.mem.avg', value, tags=tags, hostname=hostname)
-                    value = data.get('usedMax')
-                    if value:
+                    if value := data.get('usedMax'):
                         self.gauge('cisco_aci.fabric.node.mem.max', value, tags=tags, hostname=hostname)
-                    value = data.get('usedMin')
-                    if value:
+                    if value := data.get('usedMin'):
                         self.gauge('cisco_aci.fabric.node.mem.min', value, tags=tags, hostname=hostname)
 
-                    value = data.get('freeAvg')
-                    if value:
+                    if value := data.get('freeAvg'):
                         self.gauge('cisco_aci.fabric.node.mem.free.avg', value, tags=tags, hostname=hostname)
-                    value = data.get('freeMax')
-                    if value:
+                    if value := data.get('freeMax'):
                         self.gauge('cisco_aci.fabric.node.mem.free.max', value, tags=tags, hostname=hostname)
-                    value = data.get('freeMin')
-                    if value:
+                    if value := data.get('freeMin'):
                         self.gauge('cisco_aci.fabric.node.mem.free.min', value, tags=tags, hostname=hostname)
 
     def get_fabric_type(self, obj_type):

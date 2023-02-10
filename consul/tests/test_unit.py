@@ -160,8 +160,10 @@ def test_consul_request(aggregator, instance, mocker):
     mocker.patch("datadog_checks.base.utils.serialization.json.loads")
     with mock.patch("datadog_checks.consul.consul.requests.get") as mock_requests_get:
         consul_check.consul_request("foo")
-        url = "{}/{}".format(instance["url"], "foo")
-        aggregator.assert_service_check("consul.can_connect", ConsulCheck.OK, tags=["url:{}".format(url)], count=1)
+        url = f'{instance["url"]}/foo'
+        aggregator.assert_service_check(
+            "consul.can_connect", ConsulCheck.OK, tags=[f"url:{url}"], count=1
+        )
 
         aggregator.reset()
         mock_requests_get.side_effect = Exception("message")
@@ -170,9 +172,9 @@ def test_consul_request(aggregator, instance, mocker):
         aggregator.assert_service_check(
             "consul.can_connect",
             ConsulCheck.CRITICAL,
-            tags=["url:{}".format(url)],
+            tags=[f"url:{url}"],
             count=1,
-            message="Consul request to {} failed: message".format(url),
+            message=f"Consul request to {url} failed: message",
         )
 
 
@@ -295,7 +297,7 @@ def test_cull_services_list():
 
     # Big include list
     services = consul_mocks.mock_get_n_services_in_cluster(num_services)
-    consul_check.services_include = ['service_{}'.format(k) for k in range(num_services)]
+    consul_check.services_include = [f'service_{k}' for k in range(num_services)]
     assert len(consul_check._cull_services_list(services)) == MAX_SERVICES
 
     # Big include list with max_services
@@ -303,11 +305,15 @@ def test_cull_services_list():
     assert len(consul_check._cull_services_list(services)) == max_services
 
     # include list < MAX_SERVICES should spit out the include list
-    consul_check.services_include = ['service_{}'.format(k) for k in range(MAX_SERVICES - 1)]
+    consul_check.services_include = [
+        f'service_{k}' for k in range(MAX_SERVICES - 1)
+    ]
     assert set(consul_check._cull_services_list(services)) == set(consul_check.services_include)
 
     # include list < max_services param should spit out the include list
-    consul_check.services_include = ['service_{}'.format(k) for k in range(max_services - 1)]
+    consul_check.services_include = [
+        f'service_{k}' for k in range(max_services - 1)
+    ]
     assert set(consul_check._cull_services_list(services)) == set(consul_check.services_include)
 
     # No include list, still triggers truncation
@@ -401,7 +407,7 @@ def test_self_leader_event(aggregator):
     event = aggregator.events[0]
     assert event['event_type'] == 'consul.new_leader'
     assert 'prev_consul_leader:My Old Leader' in event['tags']
-    assert 'curr_consul_leader:{}'.format(our_url) in event['tags']
+    assert f'curr_consul_leader:{our_url}' in event['tags']
 
     # We are already the leader, no new events
     aggregator.reset()
@@ -425,8 +431,8 @@ def test_self_leader_event(aggregator):
     assert our_url == consul_check._last_known_leader
     event = aggregator.events[0]
     assert event['event_type'] == 'consul.new_leader'
-    assert 'prev_consul_leader:{}'.format(other_url) in event['tags']
-    assert 'curr_consul_leader:{}'.format(our_url) in event['tags']
+    assert f'prev_consul_leader:{other_url}' in event['tags']
+    assert f'curr_consul_leader:{our_url}' in event['tags']
 
 
 def test_network_latency_checks(aggregator):
@@ -527,5 +533,5 @@ def test_config(test_case, extra_config, expected_http_kwargs, mocker):
             verify=mock.ANY,
             allow_redirects=mock.ANY,
         )
-        http_wargs.update(expected_http_kwargs)
+        http_wargs |= expected_http_kwargs
         r.get.assert_called_with('/v1/status/leader', **http_wargs)

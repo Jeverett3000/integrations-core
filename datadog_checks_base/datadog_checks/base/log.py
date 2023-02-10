@@ -77,13 +77,7 @@ class CheckLogFormatter(logging.Formatter):
     def format(self, record):
         # type: (logging.LogRecord) -> str
         message = to_native_string(super(CheckLogFormatter, self).format(record))
-        return "{} | ({}:{}) | {}".format(
-            # Default to `-` for non-check logs
-            getattr(record, '_check_id', '-'),
-            getattr(record, '_filename', record.filename),
-            getattr(record, '_lineno', record.lineno),
-            message,
-        )
+        return f"{getattr(record, '_check_id', '-')} | ({getattr(record, '_filename', record.filename)}:{getattr(record, '_lineno', record.lineno)}) | {message}"
 
 
 class AgentLogHandler(logging.Handler):
@@ -191,6 +185,4 @@ def get_check_logger(default_logger=None):
             check = frame.f_locals['self']
             if isinstance(check, AgentCheck):
                 return check.log
-    if default_logger is not None:
-        return default_logger
-    return DEFAULT_FALLBACK_LOGGER
+    return DEFAULT_FALLBACK_LOGGER if default_logger is None else default_logger

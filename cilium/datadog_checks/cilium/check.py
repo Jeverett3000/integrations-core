@@ -41,7 +41,7 @@ class CiliumCheckV2(OpenMetricsBaseCheckV2):
             'openmetrics_endpoint': endpoint,
             'metrics': metrics,
         }
-        config.update(self.instance)
+        config |= self.instance
         return config
 
     def create_scraper(self, config):

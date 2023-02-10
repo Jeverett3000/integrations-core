@@ -145,11 +145,8 @@ OPERATOR_METRICS = {
     'cilium_operator_ces_sync_errors_total': 'operator.ces.sync_errors.total',
 }
 
-AGENT_V2_METRICS = deepcopy(AGENT_METRICS)
-AGENT_V2_METRICS.update(AGENT_V2_OVERRIDE)
-
-OPERATOR_V2_METRICS = deepcopy(OPERATOR_METRICS)
-OPERATOR_V2_METRICS.update(OPERATOR_V2_OVERRIDES)
+AGENT_V2_METRICS = deepcopy(AGENT_METRICS) | AGENT_V2_OVERRIDE
+OPERATOR_V2_METRICS = deepcopy(OPERATOR_METRICS) | OPERATOR_V2_OVERRIDES
 
 
 def construct_metrics_config(metric_map):

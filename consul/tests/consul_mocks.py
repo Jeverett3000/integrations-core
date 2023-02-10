@@ -15,7 +15,7 @@ MOCK_CONFIG_DISABLE_SERVICE_TAG = {
 MOCK_CONFIG_SERVICE_INCLUDE_LIST = {
     'url': 'http://localhost:8500',
     'catalog_checks': True,
-    'services_include': ['service_{}'.format(k) for k in range(70)],
+    'services_include': [f'service_{k}' for k in range(70)],
 }
 
 MOCK_CONFIG_LEADER_CHECK = {'url': 'http://localhost:8500', 'catalog_checks': True, 'new_leader_checks': True}
@@ -52,7 +52,7 @@ def _get_consul_mocks():
 
 def _get_random_ip():
     rand_int = int(15 * random.random()) + 10
-    return "10.0.2.{}".format(rand_int)
+    return f"10.0.2.{rand_int}"
 
 
 def mock_get_all_nodes():
@@ -98,7 +98,7 @@ def mock_get_services_in_cluster():
 def mock_get_n_services_in_cluster(n):
     dct = {}
     for i in range(n):
-        k = "service_{}".format(i)
+        k = f"service_{i}"
         dct[k] = []
     return dct
 
@@ -144,18 +144,24 @@ def mock_get_nodes_with_service(service):
                     "Status": "passing",
                 },
                 {
-                    "CheckID": "service:{}".format(service),
-                    "Name": "service check {}".format(service),
+                    "CheckID": f"service:{service}",
+                    "Name": f"service check {service}",
                     "Node": "node-1",
                     "Notes": "",
-                    "Output": "Service {} alive".format(service),
+                    "Output": f"Service {service} alive",
                     "ServiceID": service,
                     "ServiceName": "",
                     "Status": "passing",
                 },
             ],
             "Node": {"Address": _get_random_ip(), "Node": "node-1"},
-            "Service": {"Address": "", "ID": service, "Port": 80, "Service": service, "Tags": ["standby"]},
+            "Service": {
+                "Address": "",
+                "ID": service,
+                "Port": 80,
+                "Service": service,
+                "Tags": ["standby"],
+            },
         }
         for _ in range(4)
     ]
@@ -176,11 +182,11 @@ def mock_get_nodes_with_service_critical(service):
     for node in nodes:
         node["Checks"].append(
             {
-                "CheckID": "service:{}".format(service),
-                "Name": "service check {}".format(service),
+                "CheckID": f"service:{service}",
+                "Name": f"service check {service}",
                 "Node": "node-1",
                 "Notes": "",
-                "Output": "Service {} alive".format(service),
+                "Output": f"Service {service} alive",
                 "ServiceID": service,
                 "ServiceName": "",
                 "Status": "critical",
@@ -282,30 +288,27 @@ def mock_get_coord_nodes():
 
 
 def mock_get_coord_nodes_benchmark(num_nodes):
-    nodes = []
-    for i in range(num_nodes):
-        nodes.append(
-            {
-                "Node": "host-{}".format(i),
-                "Coord": {
-                    "Vec": [
-                        0.007682993877165208,
-                        0.002411059340215172,
-                        0.0016420746641640123,
-                        0.0037411046929292906,
-                        0.004541946058965728,
-                        0.0032195622863890523,
-                        -0.0039447666794166095,
-                        -0.0021767019427297815,
-                    ],
-                    "Error": 0.28019529748212335,
-                    "Adjustment": -9.966407036439966e-05,
-                    "Height": 0.00011777098790169723,
-                },
-            }
-        )
-
-    return nodes
+    return [
+        {
+            "Node": f"host-{i}",
+            "Coord": {
+                "Vec": [
+                    0.007682993877165208,
+                    0.002411059340215172,
+                    0.0016420746641640123,
+                    0.0037411046929292906,
+                    0.004541946058965728,
+                    0.0032195622863890523,
+                    -0.0039447666794166095,
+                    -0.0021767019427297815,
+                ],
+                "Error": 0.28019529748212335,
+                "Adjustment": -9.966407036439966e-05,
+                "Height": 0.00011777098790169723,
+            },
+        }
+        for i in range(num_nodes)
+    ]
 
 
 def mock_get_health_check(_):

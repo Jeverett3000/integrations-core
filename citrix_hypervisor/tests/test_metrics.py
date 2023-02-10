@@ -44,7 +44,7 @@ def test_build_metric_good(raw_metric, expected_name, expected_tags, caplog):
     with mock.patch('datadog_checks.citrix_hypervisor.metrics.REGEX_METRICS', new_regex_metrics):
         name, tags = metrics.build_metric(raw_metric, logger)
 
-        expected_log = 'Found metric {} ({})'.format(name, raw_metric)
+        expected_log = f'Found metric {name} ({raw_metric})'
 
         assert name == expected_name
         assert tags == expected_tags

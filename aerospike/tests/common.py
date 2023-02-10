@@ -17,7 +17,7 @@ EXPORTER_PORT = 9145
 VERSION = os.environ.get('AEROSPIKE_VERSION')
 
 OPENMETRICS_V2_INSTANCE = {
-    'openmetrics_endpoint': 'http://{}:{}/metrics'.format(HOST, EXPORTER_PORT),
+    'openmetrics_endpoint': f'http://{HOST}:{EXPORTER_PORT}/metrics',
     'tags': ['openmetrics_instance'],
 }
 
@@ -92,9 +92,12 @@ LEGACY_SET_METRICS = [
     'disable_eviction',
 ]
 
-SET_METRICS = ['enable_index', 'index_populating', 'sindexes']
-SET_METRICS.extend(LEGACY_SET_METRICS)
-
+SET_METRICS = [
+    'enable_index',
+    'index_populating',
+    'sindexes',
+    *LEGACY_SET_METRICS,
+]
 ALL_METRICS = NAMESPACE_METRICS + LEGACY_SET_METRICS
 
 STATS_METRICS = [

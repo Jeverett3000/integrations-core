@@ -15,10 +15,15 @@ from . import common
 def dd_environment():
     conditions = []
     for i in range(6):
-        conditions.append(CheckEndpoints(['http://{}:{}'.format(common.HOST, common.HTTP_START_PORT + i)]))
-        conditions.append(
-            CheckDockerLogs(
-                'clickhouse-0{}'.format(i + 1), 'Logging errors to /var/log/clickhouse-server/clickhouse-server.err.log'
+        conditions.extend(
+            (
+                CheckEndpoints(
+                    [f'http://{common.HOST}:{common.HTTP_START_PORT + i}']
+                ),
+                CheckDockerLogs(
+                    f'clickhouse-0{i + 1}',
+                    'Logging errors to /var/log/clickhouse-server/clickhouse-server.err.log',
+                ),
             )
         )
     with docker_run(common.COMPOSE_FILE, conditions=conditions, sleep=10, attempts=2):

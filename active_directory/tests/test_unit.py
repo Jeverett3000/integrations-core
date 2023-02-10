@@ -18,7 +18,7 @@ def test(aggregator, dd_default_hostname, dd_run_check, mock_performance_objects
     check.hostname = dd_default_hostname
     dd_run_check(check)
 
-    global_tags = ['server:{}'.format(dd_default_hostname)]
+    global_tags = [f'server:{dd_default_hostname}']
     aggregator.assert_service_check('active_directory.windows.perf.health', ServiceCheck.OK, count=1, tags=global_tags)
 
     for counter_data in DEFAULT_COUNTERS:

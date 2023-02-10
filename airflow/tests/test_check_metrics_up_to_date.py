@@ -80,7 +80,7 @@ def test_check_metrics_up_to_date():
     matches = METRIC_PATTERN.findall(content)
 
     # Printed only on failure for convenience.
-    print("Metric from {} :".format(url))
+    print(f"Metric from {url} :")
     print("")
     for metric, desc in matches:
         print("{:50} {}".format(metric, desc))

@@ -23,10 +23,10 @@ class AirflowCheck(AgentCheck):
         self.check_initializations.append(self._parse_config)
 
     def check(self, _):
-        tags = ['url:{}'.format(self._url)] + self._tags
+        tags = [f'url:{self._url}'] + self._tags
 
-        url_stable = self._url + "/api/v1/health"
-        url_experimental = self._url + "/api/experimental/test"
+        url_stable = f"{self._url}/api/v1/health"
+        url_experimental = f"{self._url}/api/experimental/test"
         can_connect_status = AgentCheck.OK
 
         # Query the stable API first
@@ -61,7 +61,7 @@ class AirflowCheck(AgentCheck):
             self.service_check('airflow.healthy', health_status, tags=tags)
         else:
             health_status = AgentCheck.CRITICAL
-            message = "Metadatabase is {} and scheduler is {}".format(metadb_status, scheduler_status)
+            message = f"Metadatabase is {metadb_status} and scheduler is {scheduler_status}"
             self.service_check('airflow.healthy', health_status, tags=tags, message=message)
 
         self.gauge('airflow.healthy', int(health_status == AgentCheck.OK), tags=tags)

@@ -841,7 +841,7 @@ def construct_node_metrics_config():
     for metric in dynamic_metrics:
         metrics.append({metric: {'name': metrics_map[metric], 'type': 'native_dynamic'}})
         del metrics_map[metric]
-        del metrics_map['{}_total'.format(metric)]
+        del metrics_map[f'{metric}_total']
 
     for raw_metric_name, metric_name in metrics_map.items():
         if raw_metric_name.endswith('_total') and raw_metric_name not in NODE_METRICS_OVERRIDES:

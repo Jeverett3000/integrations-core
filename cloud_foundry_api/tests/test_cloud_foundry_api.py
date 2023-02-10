@@ -662,7 +662,7 @@ def test_get_spaces(_, __, instance, spaces_v2_p1, spaces_v2_p2, spaces_v3_p1, s
 @mock.patch.object(CloudFoundryApiCheck, "http")
 def test_get_org_name(http_mock, _, __, ___, instance, org_v2, org_v3):
     check = CloudFoundryApiCheck('cloud_foundry_api', {}, [instance])
-    with mock.patch.object(check, "get_oauth_token"), mock.patch.object(check, "log") as log_mock:
+    with (mock.patch.object(check, "get_oauth_token"), mock.patch.object(check, "log") as log_mock):
         # Cache access
         assert check._orgs["org_guid"] == "org_name"
         assert check.get_org_name("org_guid") == "org_name"
@@ -676,7 +676,7 @@ def test_get_org_name(http_mock, _, __, ___, instance, org_v2, org_v3):
         assert check._orgs["new_id"] == "org_1"
         http_mock.get.assert_called_once_with(
             "https://api.sys.domain.com/v2/organizations/new_id",
-            headers={"Authorization": "Bearer {}".format(check._oauth_token)},
+            headers={"Authorization": f"Bearer {check._oauth_token}"},
         )
         # v3
         http_mock.get.reset_mock()
@@ -686,7 +686,7 @@ def test_get_org_name(http_mock, _, __, ___, instance, org_v2, org_v3):
         assert check._orgs["new_id_2"] == "org_1"
         http_mock.get.assert_called_once_with(
             "https://api.sys.domain.com/v3/organizations/new_id_2",
-            headers={"Authorization": "Bearer {}".format(check._oauth_token)},
+            headers={"Authorization": f"Bearer {check._oauth_token}"},
         )
         # Error
         http_mock.get.side_effect = RequestException
@@ -700,7 +700,7 @@ def test_get_org_name(http_mock, _, __, ___, instance, org_v2, org_v3):
 @mock.patch.object(CloudFoundryApiCheck, "http")
 def test_get_space_name(http_mock, _, __, ___, instance, space_v2, space_v3):
     check = CloudFoundryApiCheck('cloud_foundry_api', {}, [instance])
-    with mock.patch.object(check, "get_oauth_token"), mock.patch.object(check, "log") as log_mock:
+    with (mock.patch.object(check, "get_oauth_token"), mock.patch.object(check, "log") as log_mock):
         # Cache access
         assert check._spaces["space_guid"] == "space_name"
         assert check.get_space_name("space_guid") == "space_name"
@@ -714,7 +714,7 @@ def test_get_space_name(http_mock, _, __, ___, instance, space_v2, space_v3):
         assert check._spaces["new_id"] == "space_1"
         http_mock.get.assert_called_once_with(
             "https://api.sys.domain.com/v2/spaces/new_id",
-            headers={"Authorization": "Bearer {}".format(check._oauth_token)},
+            headers={"Authorization": f"Bearer {check._oauth_token}"},
         )
         # v3
         http_mock.get.reset_mock()
@@ -724,7 +724,7 @@ def test_get_space_name(http_mock, _, __, ___, instance, space_v2, space_v3):
         assert check._spaces["new_id_2"] == "space_1"
         http_mock.get.assert_called_once_with(
             "https://api.sys.domain.com/v3/spaces/new_id_2",
-            headers={"Authorization": "Bearer {}".format(check._oauth_token)},
+            headers={"Authorization": f"Bearer {check._oauth_token}"},
         )
         # Error
         http_mock.get.side_effect = RequestException

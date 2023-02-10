@@ -12,14 +12,26 @@ def test_check(aggregator):
     init_config = {"collect_host_metrics": True, "collect_service_metrics": True, "collect_service_status": True}
     instances = [
         {
-            "url": "https://{}:8443/ambari-lab-2/dp-proxy/ambari".format(ambari_ip),
+            "url": f"https://{ambari_ip}:8443/ambari-lab-2/dp-proxy/ambari",
             "username": "admin",
             "password": "admin",
             "tags": ["test:manual"],
             "services": {
                 "HDFS": {"NAMENODE": [], "DATANODE": []},
-                "YARN": {"NODEMANANGER": ["cpu", "disk", "load", "memory", "network", "process"], "YARNCLIENT": []},
-                "MAPREDUCE2": {"HISTORYSERVER": ["BufferPool", "Memory", "jvm"]},
+                "YARN": {
+                    "NODEMANANGER": [
+                        "cpu",
+                        "disk",
+                        "load",
+                        "memory",
+                        "network",
+                        "process",
+                    ],
+                    "YARNCLIENT": [],
+                },
+                "MAPREDUCE2": {
+                    "HISTORYSERVER": ["BufferPool", "Memory", "jvm"]
+                },
             },
             "timeout": 30,
             "tls_verify": False,

@@ -42,7 +42,9 @@ def test_check(aggregator, dd_run_check, instance, server_type):
         check = CitrixHypervisorCheck('citrix_hypervisor', {}, [instance])
         dd_run_check(check)
 
-        _assert_standalone_metrics(aggregator, ['foo:bar', 'server_type:{}'.format(server_type)])
+        _assert_standalone_metrics(
+            aggregator, ['foo:bar', f'server_type:{server_type}']
+        )
 
         aggregator.assert_all_metrics_covered()
         aggregator.assert_metrics_using_metadata(get_metadata_metrics())
