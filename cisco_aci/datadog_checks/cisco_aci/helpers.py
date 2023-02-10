@@ -19,12 +19,10 @@ def parse_capacity_tags(dn):
     topology/pod-1/node-101/sys/phys-[eth1/6]/CDeqptMacsectxpkts5min
     """
     tags = []
-    pod = get_pod_from_dn(dn)
-    if pod:
-        tags.append("fabric_pod_id:{}".format(pod))
-    node = get_node_from_dn(dn)
-    if node:
-        tags.append("node_id:{}".format(node))
+    if pod := get_pod_from_dn(dn):
+        tags.append(f"fabric_pod_id:{pod}")
+    if node := get_node_from_dn(dn):
+        tags.append(f"node_id:{node}")
 
     return tags
 
@@ -88,11 +86,7 @@ def get_node_from_dn(dn):
 def _get_value_from_dn(regex, dn):
     if not dn:
         return None
-    v = regex.search(dn)
-    if v:
-        return v.group(1)
-    else:
-        return None
+    return v.group(1) if (v := regex.search(dn)) else None
 
 
 def get_event_tags_from_dn(dn):
@@ -101,24 +95,18 @@ def get_event_tags_from_dn(dn):
     uni/tn-DataDog/ap-DtDg-AP1-EcommerceApp/epg-DtDg-Ecomm/HDl2IngrPktsAg1h
     """
     tags = []
-    node = get_node_from_dn(dn)
-    if node:
-        tags.append("node:" + node)
-    app = get_app_from_dn(dn)
-    if app:
-        tags.append("app:" + app)
-    bd = get_bd_from_dn(dn)
-    if bd:
-        tags.append("bd:" + bd)
-    cep = get_cep_from_dn(dn)
-    if cep:
-        tags.append("mac:" + cep)
-    ip = get_ip_from_dn(dn)
-    if ip:
-        tags.append("ip:" + ip)
-    epg = get_epg_from_dn(dn)
-    if epg:
-        tags.append("epg:" + epg)
+    if node := get_node_from_dn(dn):
+        tags.append(f"node:{node}")
+    if app := get_app_from_dn(dn):
+        tags.append(f"app:{app}")
+    if bd := get_bd_from_dn(dn):
+        tags.append(f"bd:{bd}")
+    if cep := get_cep_from_dn(dn):
+        tags.append(f"mac:{cep}")
+    if ip := get_ip_from_dn(dn):
+        tags.append(f"ip:{ip}")
+    if epg := get_epg_from_dn(dn):
+        tags.append(f"epg:{epg}")
     return tags
 
 
@@ -129,10 +117,7 @@ def get_hostname_from_dn(dn):
     """
     pod = get_pod_from_dn(dn)
     node = get_node_from_dn(dn)
-    if pod and node:
-        return "pod-{}-node-{}".format(pod, node)
-    else:
-        return None
+    return f"pod-{pod}-node-{node}" if pod and node else None
 
 
 def get_fabric_hostname(obj):
@@ -165,8 +150,7 @@ def get_attributes(obj):
     if not obj or type(obj) is not dict:
         return {}
 
-    keys = list(obj.keys())
-    if len(keys) > 0:
+    if keys := list(obj.keys()):
         key = keys[0]
     else:
         return {}
@@ -175,19 +159,8 @@ def get_attributes(obj):
         # if the object is not a dict
         # it is probably already scoped to attributes
         return obj
-    if key != "attributes":
-        attrs = key_obj.get('attributes')
-        if type(attrs) is not dict:
-            # if the attributes doesn't exist,
-            # it is probably already scoped to attributes
-            return obj
-    else:
-        # if the attributes exist, we return the value, except if it's not a dict type
-        attrs = key_obj
-        if type(attrs) is not dict:
-            return obj
-
-    return attrs
+    attrs = key_obj.get('attributes') if key != "attributes" else key_obj
+    return obj if type(attrs) is not dict else attrs
 
 
 def check_metric_can_be_zero(metric_name, metric_value, json_attributes):
@@ -203,7 +176,7 @@ def check_metric_can_be_zero(metric_name, metric_value, json_attributes):
         if metric_value == 0 or metric_value == "0" or metric_value == "0.000000" or float(metric_value) == 0.0:
             if not json_attributes or not json_attributes.get('cnt'):
                 return False
-            if json_attributes.get('cnt') == "0" or json_attributes.get('cnt') == 0:
+            if json_attributes.get('cnt') in ["0", 0]:
                 return False
     except ValueError:
         return False

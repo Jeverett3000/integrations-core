@@ -29,12 +29,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 HOST = get_docker_hostname()
 AGENT_PORT = 9090
 OPERATOR_PORT = 6942
-AGENT_URL = "http://{}:{}/metrics".format(HOST, AGENT_PORT)
-OPERATOR_URL = "http://{}:{}/metrics".format(HOST, OPERATOR_PORT)
+AGENT_URL = f"http://{HOST}:{AGENT_PORT}/metrics"
+OPERATOR_URL = f"http://{HOST}:{OPERATOR_PORT}/metrics"
 
-IMAGE_NAME = "quay.io/cilium/cilium:v{}".format(CILIUM_VERSION)
+IMAGE_NAME = f"quay.io/cilium/cilium:v{CILIUM_VERSION}"
 PORTS = [AGENT_PORT, OPERATOR_PORT]
-CLUSTER_NAME = 'cluster-{}-{}'.format('cilium', get_tox_env())
+CLUSTER_NAME = f'cluster-cilium-{get_tox_env()}'
 
 
 def setup_cilium():
@@ -93,11 +93,11 @@ def get_instances(agent_host, agent_port, operator_host, operator_port, use_open
     return {
         'instances': [
             {
-                'agent_endpoint': 'http://{}:{}/metrics'.format(agent_host, agent_port),
+                'agent_endpoint': f'http://{agent_host}:{agent_port}/metrics',
                 'use_openmetrics': use_openmetrics,
             },
             {
-                'operator_endpoint': 'http://{}:{}/metrics'.format(operator_host, operator_port),
+                'operator_endpoint': f'http://{operator_host}:{operator_port}/metrics',
                 'use_openmetrics': use_openmetrics,
             },
         ]

@@ -23,17 +23,17 @@ except ImportError as e:
 
 
 SOURCE_TYPE_NAME = 'aerospike'
-SERVICE_CHECK_UP = '%s.cluster_up' % SOURCE_TYPE_NAME
-SERVICE_CHECK_CONNECT = '%s.can_connect' % SOURCE_TYPE_NAME
-DATACENTER_SERVICE_CHECK_CONNECT = '%s.datacenter.can_connect' % SOURCE_TYPE_NAME
+SERVICE_CHECK_UP = f'{SOURCE_TYPE_NAME}.cluster_up'
+SERVICE_CHECK_CONNECT = f'{SOURCE_TYPE_NAME}.can_connect'
+DATACENTER_SERVICE_CHECK_CONNECT = f'{SOURCE_TYPE_NAME}.datacenter.can_connect'
 CLUSTER_METRIC_TYPE = SOURCE_TYPE_NAME
-DATACENTER_METRIC_TYPE = '%s.datacenter' % SOURCE_TYPE_NAME
-XDR_DATACENTER_METRIC_TYPE = '%s.xdr_dc' % SOURCE_TYPE_NAME
-NAMESPACE_METRIC_TYPE = '%s.namespace' % SOURCE_TYPE_NAME
-NAMESPACE_TPS_METRIC_TYPE = '%s.namespace.tps' % SOURCE_TYPE_NAME
-NAMESPACE_LATENCY_METRIC_TYPE = '%s.namespace.latency' % SOURCE_TYPE_NAME
-SINDEX_METRIC_TYPE = '%s.sindex' % SOURCE_TYPE_NAME
-SET_METRIC_TYPE = '%s.set' % SOURCE_TYPE_NAME
+DATACENTER_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.datacenter'
+XDR_DATACENTER_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.xdr_dc'
+NAMESPACE_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.namespace'
+NAMESPACE_TPS_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.namespace.tps'
+NAMESPACE_LATENCY_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.namespace.latency'
+SINDEX_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.sindex'
+SET_METRIC_TYPE = f'{SOURCE_TYPE_NAME}.set'
 MAX_AEROSPIKE_SETS = 200
 MAX_AEROSPIKE_SINDEXS = 100
 
@@ -61,7 +61,7 @@ def parse_namespace(data, namespace, secondary):
         # ns=bar:set=demo:objects=1:tombstones=0:memory_data_bytes=34:truncate_lut=0:stop-writes-count=0:set-enable-xdr=use-default:disable-eviction=false
         # ns=bar:set=demo2:objects=123456:tombstones=0:memory_data_bytes=8518464:truncate_lut=0:stop-writes-count=0:set-enable-xdr=use-default:disable-eviction=false
 
-        match = re.match('^ns=%s:([^:]+:)?%s=([^:]+):.*$' % (namespace, secondary), line)
+        match = re.match(f'^ns={namespace}:([^:]+:)?{secondary}=([^:]+):.*$', line)
         if match is None:
             continue
         idxs.append(match.groups()[1])
@@ -77,26 +77,24 @@ class AerospikeCheck(AgentCheck):
     def __new__(cls, name, init_config, instances):
         instance = instances[0]
 
-        if 'openmetrics_endpoint' in instance:
-            if PY2:
-                raise ConfigurationError(
-                    "This version of the integration is only available when using py3. "
-                    "Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3 "
-                    "for more information or use the older style config."
-                )
-            # TODO: when we drop Python 2 move this import up top
-            from .check import AerospikeCheckV2
-
-            return AerospikeCheckV2(name, init_config, instances)
-
-        else:
+        if 'openmetrics_endpoint' not in instance:
             return super(AerospikeCheck, cls).__new__(cls)
+        if PY2:
+            raise ConfigurationError(
+                "This version of the integration is only available when using py3. "
+                "Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3 "
+                "for more information or use the older style config."
+            )
+        # TODO: when we drop Python 2 move this import up top
+        from .check import AerospikeCheckV2
+
+        return AerospikeCheckV2(name, init_config, instances)
 
     def __init__(self, name, init_config, instances):
         super(AerospikeCheck, self).__init__(name, init_config, instances)
 
         if not aerospike:
-            msg = 'The `aerospike` client is not installed: {}'.format(aerospike_exception)
+            msg = f'The `aerospike` client is not installed: {aerospike_exception}'
             self.log.error(msg)
             raise CheckException(msg)
 
@@ -148,30 +146,30 @@ class AerospikeCheck(AgentCheck):
         namespaces = self.get_namespaces()
 
         for ns in namespaces:
-            namespace_tags = ['namespace:{}'.format(ns)]
+            namespace_tags = [f'namespace:{ns}']
             namespace_tags.extend(self._tags)
 
             # https://www.aerospike.com/docs/reference/info/#namespace
             self.collect_info(
-                'namespace/{}'.format(ns),
+                f'namespace/{ns}',
                 NAMESPACE_METRIC_TYPE,
                 required_keys=self._namespace_metrics,
                 tags=namespace_tags,
             )
 
             # https://www.aerospike.com/docs/reference/info/#sindex
-            sindex = self.get_info('sindex/{}'.format(ns))
+            sindex = self.get_info(f'sindex/{ns}')
             for idx in parse_namespace(sindex[:-1], ns, 'indexname'):
-                sindex_tags = ['sindex:{}'.format(idx)]
-                sindex_tags.extend(namespace_tags)
-                self.collect_info('sindex/{}/{}'.format(ns, idx), SINDEX_METRIC_TYPE, tags=sindex_tags)
+                sindex_tags = [f'sindex:{idx}', *namespace_tags]
+                self.collect_info(f'sindex/{ns}/{idx}', SINDEX_METRIC_TYPE, tags=sindex_tags)
 
             # https://www.aerospike.com/docs/reference/info/#sets
-            sets = self.get_info('sets/{}'.format(ns))
+            sets = self.get_info(f'sets/{ns}')
             for s in parse_namespace(sets, ns, 'set'):
-                set_tags = ['set:{}'.format(s)]
-                set_tags.extend(namespace_tags)
-                self.collect_info('sets/{}/{}'.format(ns, s), SET_METRIC_TYPE, separator=':', tags=set_tags)
+                set_tags = [f'set:{s}', *namespace_tags]
+                self.collect_info(
+                    f'sets/{ns}/{s}', SET_METRIC_TYPE, separator=':', tags=set_tags
+                )
 
         version = self.collect_version()
         if version is None:
@@ -264,16 +262,15 @@ class AerospikeCheck(AgentCheck):
         """
         if self._required_datacenters:
             for dc in self._required_datacenters:
-                data = self.get_info('get-stats:context=xdr;dc={}'.format(dc), separator=None)
+                data = self.get_info(f'get-stats:context=xdr;dc={dc}', separator=None)
                 if not data:
                     self.log.debug("Got invalid data for dc %s", dc)
                     continue
                 self.log.debug("Got data for dc `%s`: %s", dc, data)
                 parsed_data = data.split("\n")
-                tags = ['datacenter:{}'.format(dc)]
+                tags = [f'datacenter:{dc}']
                 for line in parsed_data:
-                    line = line.strip()
-                    if line:
+                    if line := line.strip():
                         if line.startswith('ERROR:'):
                             self.log.debug("Error collecting XDR metrics: %s", data)
                             continue
@@ -284,8 +281,8 @@ class AerospikeCheck(AgentCheck):
                             remote_dc = line.split(" (")[0].split(":")
                             tags.extend(
                                 [
-                                    'remote_dc_host:{}'.format(remote_dc[0]),
-                                    'remote_dc_port:{}'.format(remote_dc[1]),
+                                    f'remote_dc_host:{remote_dc[0]}',
+                                    f'remote_dc_port:{remote_dc[1]}',
                                 ]
                             )
                         else:
@@ -299,7 +296,7 @@ class AerospikeCheck(AgentCheck):
                                 value = metric[1]
                                 self.send(XDR_DATACENTER_METRIC_TYPE, key, value, tags)
                             # Reset dc tag
-                            tags = ['datacenter:{}'.format(dc)]
+                            tags = [f'datacenter:{dc}']
         else:
             self.log.debug("No datacenters were specified to collect XDR metrics: %s", self._required_datacenters)
 
@@ -326,7 +323,9 @@ class AerospikeCheck(AgentCheck):
                     self._node_name = data['node_name']
                     break
             else:
-                raise Exception('Could not find node name for {}:{} among: {}'.format(host, port, node_data))
+                raise Exception(
+                    f'Could not find node name for {host}:{port} among: {node_data}'
+                )
 
         return self._node_name
 
@@ -371,11 +370,11 @@ class AerospikeCheck(AgentCheck):
         # returned information from dc/<DATACENTER> endpoint includes a service check:
         # dc_state=CLUSTER_UP
 
-        datacenter_tags = ['datacenter:{}'.format(datacenter)]
+        datacenter_tags = [f'datacenter:{datacenter}']
         datacenter_tags.extend(self._tags)
 
         # https://www.aerospike.com/docs/reference/info/#dc/DC_NAME
-        data = self.get_info('dc/{}'.format(datacenter))
+        data = self.get_info(f'dc/{datacenter}')
 
         for item in data:
             metric = item.split("=")
@@ -384,17 +383,13 @@ class AerospikeCheck(AgentCheck):
             if key == 'dc_state':
                 if value == 'CLUSTER_UP':
                     self.service_check(DATACENTER_SERVICE_CHECK_CONNECT, self.OK, tags=self._tags)
-                    continue
                 else:
                     self.service_check(DATACENTER_SERVICE_CHECK_CONNECT, self.CRITICAL, tags=self._tags)
-                    continue
+                continue
             self.send(DATACENTER_METRIC_TYPE, key, value, datacenter_tags)
 
     def get_metric_name(self, line):
-        # match only works at the beginning
-        # ':' or ';' are not allowed in namespace-name: https://www.aerospike.com/docs/guide/limitations.html
-        ns_metric_name_match = re.match(r'\{([^}:;]+)\}-(\w+):', line)
-        if ns_metric_name_match:
+        if ns_metric_name_match := re.match(r'\{([^}:;]+)\}-(\w+):', line):
             return ns_metric_name_match.groups()[0], ns_metric_name_match.groups()[1]
         elif line.startswith("batch-index"):
             # https://www.aerospike.com/docs/operations/monitor/latency/#batch-index
@@ -420,29 +415,27 @@ class AerospikeCheck(AgentCheck):
             if metric_name is None:
                 return
 
-            namespace_tags = ['namespace:{}'.format(ns)] if ns else []
+            namespace_tags = [f'namespace:{ns}'] if ns else []
             namespace_tags.extend(self._tags)
 
-            values = re.search(r':\w+,(\d*\.?\d*),([,\d+.\d+]*)', line)
-            if values:
+            if values := re.search(r':\w+,(\d*\.?\d*),([,\d+.\d+]*)', line):
                 ops_per_sec_val = values.groups()[0]
                 # For backwards compatibility, the ops/sec value is `latencies` is already calculated
-                ops_per_sec_name = metric_name + "_" + "ops_sec"
+                ops_per_sec_name = f"{metric_name}_ops_sec"
                 self.send(NAMESPACE_LATENCY_METRIC_TYPE, ops_per_sec_name, float(ops_per_sec_val), namespace_tags)
 
-                bucket_vals = values.groups()[1]
-                if bucket_vals:
+                if bucket_vals := values.groups()[1]:
                     latencies = bucket_vals.split(',')
                     if latencies and len(latencies) == 17:
                         for i in range(len(latencies)):
                             bucket = 2**i
-                            tags = namespace_tags + ['bucket:{}'.format(bucket)]
+                            tags = namespace_tags + [f'bucket:{bucket}']
                             latency_name = metric_name
                             self.send(NAMESPACE_LATENCY_METRIC_TYPE, latency_name, latencies[i], tags)
 
                             # Also submit old latency names like `aerospike.namespace.latency.read_over_64ms`
                             if bucket in [1, 8, 64]:
-                                latency_name = metric_name + '_over_{}ms'.format(str(bucket))
+                                latency_name = f'{metric_name}_over_{str(bucket)}ms'
                                 self.send(NAMESPACE_LATENCY_METRIC_TYPE, latency_name, latencies[i], tags)
                     else:
                         self.log.debug("Got unexpected latency buckets: %s", latencies)
@@ -466,8 +459,7 @@ class AerospikeCheck(AgentCheck):
             if line.startswith("error-"):
                 continue
 
-            timestamp = re.match(r'(\d+:\d+:\d+)', line)
-            if timestamp:
+            if timestamp := re.match(r'(\d+:\d+:\d+)', line):
                 metric_values = line.split(",")[1:]
                 ns_latencies[ns].setdefault("metric_values", []).extend(metric_values)
                 continue
@@ -476,17 +468,13 @@ class AerospikeCheck(AgentCheck):
             if metric_name is None:
                 return
 
-            # need search because this isn't at the beginning
-            ops_per_sec = re.search(r'(\w+\/\w+)', line)
-            if ops_per_sec:
+            if ops_per_sec := re.search(r'(\w+\/\w+)', line):
                 ops_per_sec_name = ops_per_sec.groups()[0].replace("/", "_")
-                metric_names.append(metric_name + "_" + ops_per_sec_name)
+                metric_names.append(f"{metric_name}_{ops_per_sec_name}")
 
-            # findall will grab everything instead of first match
-            latencies = re.findall(r'>(\d+ms)', line)
-            if latencies:
+            if latencies := re.findall(r'>(\d+ms)', line):
                 for latency in latencies:
-                    latency = metric_name + '_over_' + latency
+                    latency = f'{metric_name}_over_{latency}'
                     metric_names.append(latency)
 
             ns_latencies[ns].setdefault("metric_names", []).extend(metric_names)
@@ -494,7 +482,7 @@ class AerospikeCheck(AgentCheck):
         for ns, v in iteritems(ns_latencies):
             metric_names = v.get("metric_names", [])
             metric_values = v.get("metric_values", [])
-            namespace_tags = ['namespace:{}'.format(ns)] if ns else []
+            namespace_tags = [f'namespace:{ns}'] if ns else []
             namespace_tags.extend(self._tags)
             if len(metric_names) == len(metric_values):
                 for i in range(len(metric_names)):
@@ -538,7 +526,7 @@ class AerospikeCheck(AgentCheck):
                 # unexpected EOF
                 return
 
-            namespace_tags = ['namespace:{}'.format(ns)]
+            namespace_tags = [f'namespace:{ns}']
             namespace_tags.extend(self._tags)
             val = data.pop(0).split(',')[1]
             self.send(NAMESPACE_TPS_METRIC_TYPE, key, val, namespace_tags)
@@ -573,4 +561,4 @@ class AerospikeCheck(AgentCheck):
 
     @staticmethod
     def make_key(event_type, n):
-        return '%s.%s' % (event_type, n.replace('-', '_'))
+        return f"{event_type}.{n.replace('-', '_')}"

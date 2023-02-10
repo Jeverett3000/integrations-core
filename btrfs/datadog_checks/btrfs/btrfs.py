@@ -172,16 +172,16 @@ class BTRFS(AgentCheck):
             if p.fstype == 'btrfs' and p.device not in btrfs_devices and p.device not in self.excluded_devices:
                 btrfs_devices[p.device] = p.mountpoint
 
-        if len(btrfs_devices) == 0:
+        if not btrfs_devices:
             raise Exception("No btrfs device found")
 
         for device, mountpoint in iteritems(btrfs_devices):
             for flags, total_bytes, used_bytes in self.get_usage(mountpoint):
                 replication_type, usage_type = FLAGS_MAPPER[flags]
                 tags = [
-                    'usage_type:{}'.format(usage_type),
-                    'replication_type:{}'.format(replication_type),
-                    "device:{}".format(device),
+                    f'usage_type:{usage_type}',
+                    f'replication_type:{replication_type}',
+                    f"device:{device}",
                 ]
                 tags.extend(self.custom_tags)
 
@@ -195,7 +195,7 @@ class BTRFS(AgentCheck):
 
             unallocated_bytes = self.get_unallocated_space(mountpoint)
             if unallocated_bytes is not None:
-                tags = ["device:{}".format(device)] + self.custom_tags
+                tags = [f"device:{device}"] + self.custom_tags
                 self.gauge("system.disk.btrfs.unallocated", unallocated_bytes, tags=tags)
             else:
                 self.log.debug(

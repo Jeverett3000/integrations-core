@@ -44,11 +44,11 @@ class AviVantageCheck(OpenMetricsBaseCheckV2, ConfigMixin):
                 )
             resource_metrics = RESOURCE_METRICS[entity]
             instance_copy = deepcopy(self.instance)
-            endpoint = self.base_url + "/api/analytics/prometheus-metrics/" + entity
+            endpoint = f"{self.base_url}/api/analytics/prometheus-metrics/{entity}"
             instance_copy['openmetrics_endpoint'] = endpoint
             instance_copy['metrics'] = [resource_metrics]
             instance_copy['rename_labels'] = LABELS_REMAPPER.copy()
-            instance_copy['rename_labels']['name'] = entity + "_name"
+            instance_copy['rename_labels']['name'] = f"{entity}_name"
             instance_copy['rename_labels'].update(self.config.rename_labels)
 
             scrapers[endpoint] = self.create_scraper(instance_copy)
@@ -59,8 +59,8 @@ class AviVantageCheck(OpenMetricsBaseCheckV2, ConfigMixin):
     @contextmanager
     def login(self):
         self.http._session = None
-        login_url = self.base_url + "/login"
-        logout_url = self.base_url + "/logout"
+        login_url = f"{self.base_url}/login"
+        logout_url = f"{self.base_url}/logout"
         try:
             login_resp = self.http.post(
                 login_url, data={'username': self.config.username, 'password': self.config.password}
@@ -73,8 +73,7 @@ class AviVantageCheck(OpenMetricsBaseCheckV2, ConfigMixin):
             self.service_check("can_connect", AgentCheck.OK, tags=self.config.tags)
 
         yield
-        csrf_token = self.http.session.cookies.get('csrftoken')
-        if csrf_token:
+        if csrf_token := self.http.session.cookies.get('csrftoken'):
             logout_resp = self.http.post(
                 logout_url, extra_headers={'X-CSRFToken': csrf_token, 'Referer': self.base_url}
             )
@@ -82,7 +81,7 @@ class AviVantageCheck(OpenMetricsBaseCheckV2, ConfigMixin):
 
     @AgentCheck.metadata_entrypoint
     def collect_avi_version(self):
-        response = self.http.get(self.base_url + "/api/cluster/version")
+        response = self.http.get(f"{self.base_url}/api/cluster/version")
         response.raise_for_status()
         version = response.json()['Version']
         self.set_metadata('version', version)

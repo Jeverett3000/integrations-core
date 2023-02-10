@@ -33,7 +33,7 @@ def test_e2e(dd_agent_check):
 
 
 def _test_check(aggregator):
-    tags = ["url:{}".format(URL)]
+    tags = [f"url:{URL}"]
 
     # Test metrics
     for mname in GENERAL_METRICS:
@@ -43,7 +43,7 @@ def _test_check(aggregator):
         aggregator.assert_metric(mname, count=1, tags=tags + ["queue:my_queue"])
 
     for mname, tname in product(TOPIC_METRICS, ["my_topic", "ActiveMQ.Advisory.MasterBroker"]):
-        aggregator.assert_metric(mname, count=1, tags=tags + ["topic:{}".format(tname)])
+        aggregator.assert_metric(mname, count=1, tags=tags + [f"topic:{tname}"])
 
     for mname in SUBSCRIBER_METRICS:
         subscriber_tags = tags + [

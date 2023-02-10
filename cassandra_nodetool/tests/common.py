@@ -12,7 +12,7 @@ CASSANDRA_CONTAINER_NAME = 'dd-test-cassandra'
 CASSANDRA_CONTAINER_NAME_2 = 'dd-test-cassandra2'
 
 CONFIG_INSTANCE = {
-    'nodetool': 'docker exec {} nodetool'.format(CASSANDRA_CONTAINER_NAME),
+    'nodetool': f'docker exec {CASSANDRA_CONTAINER_NAME} nodetool',
     'keyspaces': ['system', 'test'],
     'username': 'controlRole',
     'password': 'QED',

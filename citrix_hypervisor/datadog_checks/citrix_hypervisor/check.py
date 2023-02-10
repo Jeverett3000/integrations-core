@@ -35,7 +35,7 @@ class CitrixHypervisorCheck(AgentCheck):
     def _check_connection(self):
         # type: () -> None
         # Get the latest timestamp to reduce the length of the update endpoint response
-        r = self.http.get(self._base_url + '/host_rrd', params={'json': 'true'})
+        r = self.http.get(f'{self._base_url}/host_rrd', params={'json': 'true'})
         if r.status_code == 200:
             self._last_timestamp = int(float(r.json()['lastupdate'])) - 60
         else:
@@ -48,7 +48,7 @@ class CitrixHypervisorCheck(AgentCheck):
             'host': 'true',
             'json': 'true',
         }
-        r = self.http.get(self._base_url + '/rrd_updates', params=params)
+        r = self.http.get(f'{self._base_url}/rrd_updates', params=params)
         r.raise_for_status()
         # Response is not formatted for simplejson, it's missing double quotes " around the field names
         # Explicitly use the python safe loader, the C binding is failing
@@ -93,7 +93,7 @@ class CitrixHypervisorCheck(AgentCheck):
 
         master_address = session['ErrorDescription'][1]
         if not master_address.startswith('http://'):
-            master_address = 'http://' + master_address
+            master_address = f'http://{master_address}'
         master_xenserver = xmlrpclib.Server(master_address)
 
         # Master credentials can be different, we could specify new `master_username` and
@@ -151,13 +151,17 @@ class CitrixHypervisorCheck(AgentCheck):
             self.service_check(
                 self.SERVICE_CHECK_CONNECT,
                 self.OK,
-                ['citrix_hypervisor_url:{}'.format(self._base_url)] + self._additional_tags + self.tags,
+                [f'citrix_hypervisor_url:{self._base_url}']
+                + self._additional_tags
+                + self.tags,
             )
         except Exception as e:
             self.service_check(
                 self.SERVICE_CHECK_CONNECT,
                 self.CRITICAL,
-                ['citrix_hypervisor_url:{}'.format(self._base_url)] + self._additional_tags + self.tags,
+                [f'citrix_hypervisor_url:{self._base_url}']
+                + self._additional_tags
+                + self.tags,
             )
             self.log.exception(e)
         else:
@@ -180,8 +184,7 @@ class CitrixHypervisorCheck(AgentCheck):
             if software_version.get('Status') != 'Success':
                 self.log.warning('get_software_version call failed: %s', str(software_version))
 
-            product_version = software_version['Value'].get('product_version')
-            if product_version:
+            if product_version := software_version['Value'].get('product_version'):
                 self.set_metadata('version', product_version)
         except Exception as e:
             self.log.warning("Couldn't get product version: %s", str(e))

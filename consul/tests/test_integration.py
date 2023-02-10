@@ -53,7 +53,9 @@ def test_check(aggregator, instance, dd_environment):
     aggregator.assert_metric('consul.peers', value=3)
 
     aggregator.assert_service_check('consul.check')
-    aggregator.assert_service_check('consul.up', tags=['consul_datacenter:dc1', 'consul_url:{}'.format(common.URL)])
+    aggregator.assert_service_check(
+        'consul.up', tags=['consul_datacenter:dc1', f'consul_url:{common.URL}']
+    )
 
     aggregator.assert_metrics_using_metadata(get_metadata_metrics(), check_submission_type=True)
     aggregator.assert_all_metrics_covered()
@@ -70,7 +72,9 @@ def test_single_node_install(aggregator, instance_single_node_install, dd_enviro
     aggregator.assert_metric('consul.peers', value=3)
 
     aggregator.assert_service_check('consul.check')
-    aggregator.assert_service_check('consul.up', tags=['consul_datacenter:dc1', 'consul_url:{}'.format(common.URL)])
+    aggregator.assert_service_check(
+        'consul.up', tags=['consul_datacenter:dc1', f'consul_url:{common.URL}']
+    )
 
     aggregator.assert_metrics_using_metadata(get_metadata_metrics(), check_submission_type=True)
     aggregator.assert_all_metrics_covered()
@@ -112,7 +116,8 @@ def test_prometheus_endpoint(aggregator, dd_environment, instance_prometheus, ca
 
     aggregator.assert_service_check(
         'consul.prometheus.health',
-        tags=common_tags + ['endpoint:{}/v1/agent/metrics?format=prometheus'.format(common.URL)],
+        tags=common_tags
+        + [f'endpoint:{common.URL}/v1/agent/metrics?format=prometheus'],
     )
 
     for metric in common.PROMETHEUS_METRICS:
@@ -128,15 +133,25 @@ def test_prometheus_endpoint(aggregator, dd_environment, instance_prometheus, ca
         aggregator.assert_metric_has_tag_prefix('consul.raft.replication.appendEntries.logs', 'peer_id', count=2)
 
     for hist_suffix in ['count', 'sum', 'quantile']:
-        aggregator.assert_metric_has_tag('consul.http.request.{}'.format(hist_suffix), 'method:GET', at_least=0)
+        aggregator.assert_metric_has_tag(
+            f'consul.http.request.{hist_suffix}', 'method:GET', at_least=0
+        )
         for tag in common_tags:
-            aggregator.assert_metric_has_tag('consul.raft.leader.lastContact.' + hist_suffix, tag, at_least=0)
+            aggregator.assert_metric_has_tag(
+                f'consul.raft.leader.lastContact.{hist_suffix}',
+                tag,
+                at_least=0,
+            )
             for metric in common.PROMETHEUS_HIST_METRICS:
                 aggregator.assert_metric_has_tag(metric + hist_suffix, tag, at_least=1)
             if greater_than_1_6:
                 for metric in PROMETHEUS_HIST_METRICS_1_9:
                     aggregator.assert_metric_has_tag(metric + hist_suffix, tag, at_least=1)
-                aggregator.assert_metric_has_tag('consul.raft.replication.heartbeat.' + hist_suffix, tag, at_least=1)
+                aggregator.assert_metric_has_tag(
+                    f'consul.raft.replication.heartbeat.{hist_suffix}',
+                    tag,
+                    at_least=1,
+                )
 
     # Some of the metrics documented in the metadata.csv were sent through DogStatsD as `timer` as well.
     # We end up with some of the prometheus metrics having a different in-app type.

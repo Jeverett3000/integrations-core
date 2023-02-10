@@ -6,13 +6,13 @@ base_path = '/usr/share/responses'
 
 @app.route("/rrd_updates", methods=["GET"])
 def rrd_updates():
-    f = open(base_path + '/rrd_updates.json', 'r')
+    f = open(f'{base_path}/rrd_updates.json', 'r')
     return f.read()
 
 
 @app.route("/host_rrd", methods=["GET"])
 def host_rrd():
-    f = open(base_path + '/host_rrd.json', 'r')
+    f = open(f'{base_path}/host_rrd.json', 'r')
 
     return f.read()
 

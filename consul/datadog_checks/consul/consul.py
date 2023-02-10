@@ -58,7 +58,7 @@ class ConsulCheck(OpenMetricsBaseCheck):
                     'The DogStatsD method and the Prometheus method are both enabled. Please choose only one.'
                 )
 
-            instance['prometheus_url'] = '{}/v1/agent/metrics?format=prometheus'.format(self.url)
+            instance['prometheus_url'] = f'{self.url}/v1/agent/metrics?format=prometheus'
 
             if 'headers' not in instance:
                 instance['headers'] = {'X-Consul-Token': instance.get('acl_token')}
@@ -127,8 +127,9 @@ class ConsulCheck(OpenMetricsBaseCheck):
 
     def _is_dogstatsd_configured(self):
         """Check if the agent has a consul dogstatsd profile configured"""
-        dogstatsd_mapper = datadog_agent.get_config('dogstatsd_mapper_profiles')
-        if dogstatsd_mapper:
+        if dogstatsd_mapper := datadog_agent.get_config(
+            'dogstatsd_mapper_profiles'
+        ):
             for profile in dogstatsd_mapper:
                 if profile.get('name') == 'consul':
                     return True
@@ -136,24 +137,30 @@ class ConsulCheck(OpenMetricsBaseCheck):
 
     def consul_request(self, endpoint):
         url = urljoin(self.url, endpoint)
-        service_check_tags = ["url:{}".format(url)] + self.base_tags
+        service_check_tags = [f"url:{url}"] + self.base_tags
         try:
             resp = self.http.get(url)
 
             resp.raise_for_status()
 
         except requests.exceptions.Timeout as e:
-            msg = 'Consul request to {} timed out'.format(url)
+            msg = f'Consul request to {url} timed out'
             self.log.exception(msg)
             self.service_check(
-                CONSUL_CAN_CONNECT, self.CRITICAL, tags=service_check_tags, message="{}: {}".format(msg, e)
+                CONSUL_CAN_CONNECT,
+                self.CRITICAL,
+                tags=service_check_tags,
+                message=f"{msg}: {e}",
             )
             raise
         except Exception as e:
-            msg = "Consul request to {} failed".format(url)
+            msg = f"Consul request to {url} failed"
             self.log.exception(msg)
             self.service_check(
-                CONSUL_CAN_CONNECT, self.CRITICAL, tags=service_check_tags, message="{}: {}".format(msg, e)
+                CONSUL_CAN_CONNECT,
+                self.CRITICAL,
+                tags=service_check_tags,
+                message=f"{msg}: {e}",
             )
             raise
         else:
@@ -185,14 +192,13 @@ class ConsulCheck(OpenMetricsBaseCheck):
             'Ports', {}
         ).get('Server')
 
-        agent_url = "{}:{}".format(agent_addr, agent_port)
+        agent_url = f"{agent_addr}:{agent_port}"
         self.log.debug("Agent url is %s", agent_url)
         return agent_url
 
     def _get_agent_datacenter(self):
         local_config = self._get_local_config()
-        agent_dc = local_config.get('Config', {}).get('Datacenter')
-        return agent_dc
+        return local_config.get('Config', {}).get('Datacenter')
 
     # Consul Leader Checks
     def _is_instance_leader(self):
@@ -234,29 +240,28 @@ class ConsulCheck(OpenMetricsBaseCheck):
         agent = self._get_agent_url()
         agent_dc = self._get_agent_datacenter()
 
-        if leader != self._last_known_leader:
-            # There was a leadership change
-            if self.perform_new_leader_checks or (self.perform_self_leader_check and agent == leader):
-                # We either emit all leadership changes or emit when we become the leader and that just happened
-                self.log.info('Leader change from %s to %s. Sending new leader event', self._last_known_leader, leader)
+        if leader != self._last_known_leader and (
+            self.perform_new_leader_checks
+            or (self.perform_self_leader_check and agent == leader)
+        ):
+            # We either emit all leadership changes or emit when we become the leader and that just happened
+            self.log.info('Leader change from %s to %s. Sending new leader event', self._last_known_leader, leader)
 
-                self.event(
-                    {
-                        "timestamp": timestamp(),
-                        "event_type": "consul.new_leader",
-                        "source_type_name": SOURCE_TYPE_NAME,
-                        "msg_title": "New Consul Leader Elected in consul_datacenter:{}".format(agent_dc),
-                        "aggregation_key": "consul.new_leader",
-                        "msg_text": "The Node at {} is the new leader of the consul datacenter {}".format(
-                            leader, agent_dc
-                        ),
-                        "tags": [
-                            "prev_consul_leader:{}".format(self._last_known_leader),
-                            "curr_consul_leader:{}".format(leader),
-                            "consul_datacenter:{}".format(agent_dc),
-                        ],
-                    }
-                )
+            self.event(
+                {
+                    "timestamp": timestamp(),
+                    "event_type": "consul.new_leader",
+                    "source_type_name": SOURCE_TYPE_NAME,
+                    "msg_title": f"New Consul Leader Elected in consul_datacenter:{agent_dc}",
+                    "aggregation_key": "consul.new_leader",
+                    "msg_text": f"The Node at {leader} is the new leader of the consul datacenter {agent_dc}",
+                    "tags": [
+                        f"prev_consul_leader:{self._last_known_leader}",
+                        f"curr_consul_leader:{leader}",
+                        f"consul_datacenter:{agent_dc}",
+                    ],
+                }
+            )
 
         self._last_known_leader = leader
 
@@ -268,7 +273,7 @@ class ConsulCheck(OpenMetricsBaseCheck):
         return self.consul_request('/v1/catalog/services')
 
     def get_nodes_with_service(self, service):
-        consul_request_url = '/v1/health/service/{}'.format(service)
+        consul_request_url = f'/v1/health/service/{service}'
 
         return self.consul_request(consul_request_url)
 
@@ -302,9 +307,7 @@ class ConsulCheck(OpenMetricsBaseCheck):
                 self.log.debug(log_line)
                 services = allowed_services
             else:
-                log_line = 'Consul services_include not defined. Agent will poll for at most {} services'.format(
-                    self.max_services
-                )
+                log_line = f'Consul services_include not defined. Agent will poll for at most {self.max_services} services'
                 self.warning(log_line)
 
                 services = {s: services[s] for s in list(islice(iterkeys(allowed_services), 0, self.max_services))}
@@ -313,12 +316,15 @@ class ConsulCheck(OpenMetricsBaseCheck):
 
     @staticmethod
     def _get_service_tags(service, tags):
-        service_tags = ['consul_service_id:{}'.format(service)]
+        service_tags = [f'consul_service_id:{service}']
 
         for tag in tags:
-            service_tags.append('consul_{}_service_tag:{}'.format(service, tag))
-            service_tags.append('consul_service_tag:{}'.format(tag))
-
+            service_tags.extend(
+                (
+                    f'consul_{service}_service_tag:{tag}',
+                    f'consul_service_tag:{tag}',
+                )
+            )
         return service_tags
 
     def check(self, _):
@@ -334,7 +340,7 @@ class ConsulCheck(OpenMetricsBaseCheck):
         agent_dc = self._get_agent_datacenter()
 
         if agent_dc is not None:
-            main_tags.append('consul_datacenter:{}'.format(agent_dc))
+            main_tags.append(f'consul_datacenter:{agent_dc}')
 
         main_tags += self.base_tags
 
@@ -349,7 +355,7 @@ class ConsulCheck(OpenMetricsBaseCheck):
         else:
             self.gauge("consul.peers", len(peers), tags=main_tags + ["mode:leader"])
 
-        service_check_tags = main_tags + ['consul_url:{}'.format(self.url)]
+        service_check_tags = main_tags + [f'consul_url:{self.url}']
 
         try:
             # Make service checks from health checks for all services in catalog
@@ -358,22 +364,22 @@ class ConsulCheck(OpenMetricsBaseCheck):
             sc = {}
             # compute the highest status level (OK < WARNING < CRITICAL) a a check among all the nodes is running on.
             for check in health_state:
-                sc_id = '{}/{}/{}'.format(check['CheckID'], check.get('ServiceID', ''), check.get('ServiceName', ''))
+                sc_id = f"{check['CheckID']}/{check.get('ServiceID', '')}/{check.get('ServiceName', '')}"
                 status = STATUS_SC.get(check['Status'])
                 if status is None:
                     status = self.UNKNOWN
 
                 if sc_id not in sc:
-                    tags = ["check:{}".format(check["CheckID"])]
+                    tags = [f'check:{check["CheckID"]}']
                     if check["ServiceName"]:
-                        tags.append('consul_service:{}'.format(check['ServiceName']))
+                        tags.append(f"consul_service:{check['ServiceName']}")
                         if not self.disable_legacy_service_tag:
                             self._log_deprecation('service_tag', 'consul_service')
-                            tags.append('service:{}'.format(check['ServiceName']))
+                            tags.append(f"service:{check['ServiceName']}")
                     if check["ServiceID"]:
-                        tags.append("consul_service_id:{}".format(check["ServiceID"]))
+                        tags.append(f'consul_service_id:{check["ServiceID"]}')
                     if check["Node"]:
-                        tags.append("consul_node:{}".format(check["Node"]))
+                        tags.append(f'consul_node:{check["Node"]}')
                     sc[sc_id] = {'status': status, 'tags': tags}
 
                 elif STATUS_SEVERITY[status] > STATUS_SEVERITY[sc[sc_id]['status']]:
@@ -403,28 +409,14 @@ class ConsulCheck(OpenMetricsBaseCheck):
             # Maps NodeStatus -> int
             nodes_per_service_tag_counts = defaultdict(int)
 
-            # Note: This part submits multiple metrics with different meanings.
-            # `consul.catalog.nodes_<STATUS>` tagged with the name of the service and all the tags for this service.
-            #   The metric means the number of nodes with that status and should use `max` queries when aggregating
-            #   over multiple services.
-            # `consul.catalog.services_<STATUS>` tagged with the name of the node.
-            #   The metric means the number of services with that status and should use `max` queries when aggregating
-            #   over multiple nodes.
-            # `consul.catalog.services_count` tagged by node name, service name and status and service tags.
-            #   The metric is a gauge whose value is the total number of services sharing the same name, the same node
-            #   and the same tags.
-
-            nodes_with_service = {}
-            # Collecting nodes with service in parallel to support cluster with high volume of services
-            # Any code with potential impact on the performance of this check should go here
-            for service in services:
-                if self.thread_pool is None:
-                    nodes_with_service[service] = self.get_nodes_with_service(service)
-                else:
-                    nodes_with_service[service] = self.thread_pool.apply_async(
-                        self.get_nodes_with_service, args=(service,)
-                    )
-
+            nodes_with_service = {
+                service: self.get_nodes_with_service(service)
+                if self.thread_pool is None
+                else self.thread_pool.apply_async(
+                    self.get_nodes_with_service, args=(service,)
+                )
+                for service in services
+            }
             for service in services:
                 self._submit_service_status(
                     main_tags,
@@ -442,27 +434,38 @@ class ConsulCheck(OpenMetricsBaseCheck):
                 # `consul.catalog.services_warning` : Total warning services on node
                 # `consul.catalog.services_critical` : Total critical services on node
 
-                node_tags = ['consul_node_id:{}'.format(node)]
-                self.gauge('{}.services_up'.format(CONSUL_CATALOG_CHECK), len(services), tags=main_tags + node_tags)
+                node_tags = [f'consul_node_id:{node}']
+                self.gauge(
+                    f'{CONSUL_CATALOG_CHECK}.services_up',
+                    len(services),
+                    tags=main_tags + node_tags,
+                )
 
                 for status_key in STATUS_SC:
                     status_value = service_status[status_key]
                     self.gauge(
-                        '{}.services_{}'.format(CONSUL_CATALOG_CHECK, status_key),
+                        f'{CONSUL_CATALOG_CHECK}.services_{status_key}',
                         status_value,
                         tags=main_tags + node_tags,
                     )
 
             for node_status, count in iteritems(nodes_per_service_tag_counts):
                 service_tags = [
-                    'consul_{}_service_tag:{}'.format(node_status.service_name, tag)
+                    f'consul_{node_status.service_name}_service_tag:{tag}'
                     for tag in node_status.service_tags_set
                 ]
-                service_tags.append('consul_service_id:{}'.format(node_status.service_name))
-                service_tags.append('consul_node_id:{}'.format(node_status.node_id))
-                service_tags.append('consul_status:{}'.format(node_status.status))
-
-                self.gauge('{}.services_count'.format(CONSUL_CATALOG_CHECK), count, tags=main_tags + service_tags)
+                service_tags.extend(
+                    (
+                        f'consul_service_id:{node_status.service_name}',
+                        f'consul_node_id:{node_status.node_id}',
+                        f'consul_status:{node_status.status}',
+                    )
+                )
+                self.gauge(
+                    f'{CONSUL_CATALOG_CHECK}.services_count',
+                    count,
+                    tags=main_tags + service_tags,
+                )
 
         if self.perform_network_latency_checks:
             self.check_network_latency(agent_dc, main_tags)
@@ -548,7 +551,7 @@ class ConsulCheck(OpenMetricsBaseCheck):
         for status_key in STATUS_SC:
             status_value = node_count_per_status[status_key]
             self.gauge(
-                '{}.nodes_{}'.format(CONSUL_CATALOG_CHECK, status_key),
+                f'{CONSUL_CATALOG_CHECK}.nodes_{status_key}',
                 status_value,
                 tags=main_tags + all_service_tags,
             )
@@ -573,10 +576,12 @@ class ConsulCheck(OpenMetricsBaseCheck):
                         continue
                     latencies = []
                     for node_a in datacenter['Coordinates']:
-                        for node_b in other['Coordinates']:
-                            latencies.append(distance(node_a, node_b))
+                        latencies.extend(distance(node_a, node_b) for node_b in other['Coordinates'])
                     latencies.sort()
-                    tags = main_tags + ['source_datacenter:{}'.format(name), 'dest_datacenter:{}'.format(other_name)]
+                    tags = main_tags + [
+                        f'source_datacenter:{name}',
+                        f'dest_datacenter:{other_name}',
+                    ]
                     n = len(latencies)
                     half_n = n // 2
                     if n % 2:

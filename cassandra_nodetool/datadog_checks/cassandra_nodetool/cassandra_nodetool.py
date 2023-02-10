@@ -90,10 +90,10 @@ class CassandraNodetoolCheck(AgentCheck):
             for node in nodes:
 
                 node_tags = [
-                    'node_address:%s' % node['address'],
-                    'node_id:%s' % node['id'],
-                    'datacenter:%s' % node['datacenter'],
-                    'rack:%s' % node['rack'],
+                    f"node_address:{node['address']}",
+                    f"node_id:{node['id']}",
+                    f"datacenter:{node['datacenter']}",
+                    f"rack:{node['rack']}",
                 ]
 
                 # nodetool prints `?` when it can't compute the value of `owns` for certain keyspaces (e.g. system)
@@ -104,7 +104,9 @@ class CassandraNodetoolCheck(AgentCheck):
                         percent_up_by_dc[node['datacenter']] += owns
                     percent_total_by_dc[node['datacenter']] += owns
                     self.gauge(
-                        'cassandra.nodetool.status.owns', owns, tags=self.tags + node_tags + ['keyspace:%s' % keyspace]
+                        'cassandra.nodetool.status.owns',
+                        owns,
+                        tags=self.tags + node_tags + [f'keyspace:{keyspace}'],
                     )
 
                 # Send service check only once for each node
@@ -129,35 +131,26 @@ class CassandraNodetoolCheck(AgentCheck):
                 self.gauge(
                     'cassandra.nodetool.status.replication_availability',
                     percent_up,
-                    tags=self.tags + ['keyspace:%s' % keyspace, 'datacenter:%s' % datacenter],
+                    tags=self.tags
+                    + [f'keyspace:{keyspace}', f'datacenter:{datacenter}'],
                 )
             for datacenter, percent_total in percent_total_by_dc.items():
                 self.gauge(
                     'cassandra.nodetool.status.replication_factor',
                     int(round(percent_total / 100)),
-                    tags=self.tags + ['keyspace:%s' % keyspace, 'datacenter:%s' % datacenter],
+                    tags=self.tags
+                    + [f'keyspace:{keyspace}', f'datacenter:{datacenter}'],
                 )
 
     def _process_nodetool_output(self, output):
         nodes = []
         datacenter_name = ""
         for line in output.splitlines():
-            # Output of nodetool
-            # Datacenter: dc1
-            # ===============
-            # Status=Up/Down
-            # |/ State=Normal/Leaving/Joining/Moving
-            # --  Address     Load       Tokens  Owns (effective)  Host ID                               Rack
-            # UN  172.21.0.3  184.8 KB   256     38.4%             7501ef03-eb63-4db0-95e6-20bfeb7cdd87  RAC1
-            # UN  172.21.0.4  223.34 KB  256     39.5%             e521a2a4-39d3-4311-a195-667bf56450f4  RAC1
-
-            match = self.datacenter_name_re.search(line)
-            if match:
+            if match := self.datacenter_name_re.search(line):
                 datacenter_name = match.group(1)
                 continue
 
-            match = self.node_status_re.search(line)
-            if match:
+            if match := self.node_status_re.search(line):
                 node = {
                     'status': match.group('status'),
                     'address': match.group('address'),

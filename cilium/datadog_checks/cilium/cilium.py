@@ -16,19 +16,18 @@ class CiliumCheck(OpenMetricsBaseCheck):
     def __new__(cls, name, init_config, instances):
         instance = instances[0]
 
-        if is_affirmative(instance.get('use_openmetrics', False)):
-            if PY2:
-                raise ConfigurationError(
-                    "This version of the integration is only available when using py3. "
-                    "Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3 "
-                    "for more information or use the older style config."
-                )
-            # TODO: when we drop Python 2 move this import up top
-            from .check import CiliumCheckV2
-
-            return CiliumCheckV2(name, init_config, instances)
-        else:
+        if not is_affirmative(instance.get('use_openmetrics', False)):
             return super(CiliumCheck, cls).__new__(cls)
+        if PY2:
+            raise ConfigurationError(
+                "This version of the integration is only available when using py3. "
+                "Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3 "
+                "for more information or use the older style config."
+            )
+        # TODO: when we drop Python 2 move this import up top
+        from .check import CiliumCheckV2
+
+        return CiliumCheckV2(name, init_config, instances)
 
     def __init__(self, name, init_config, instances):
         instance = instances[0]

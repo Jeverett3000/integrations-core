@@ -17,7 +17,7 @@ def test(aggregator, dd_default_hostname, dd_run_check, mock_performance_objects
     check.hostname = dd_default_hostname
     dd_run_check(check)
 
-    global_tags = ['server:{}'.format(dd_default_hostname)]
+    global_tags = [f'server:{dd_default_hostname}']
     aggregator.assert_service_check('aspdotnet.windows.perf.health', ServiceCheck.OK, count=1, tags=global_tags)
 
     for metric in ASP_METRICS:
@@ -25,8 +25,7 @@ def test(aggregator, dd_default_hostname, dd_run_check, mock_performance_objects
 
     for metric in ASP_APP_METRICS:
         for instance in ASP_APP_INSTANCES[1:]:
-            tags = ['instance:{}'.format(instance)]
-            tags.extend(global_tags)
+            tags = [f'instance:{instance}', *global_tags]
             aggregator.assert_metric(metric, 9000, count=1, tags=tags)
 
     aggregator.assert_all_metrics_covered()

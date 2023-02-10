@@ -16,7 +16,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TMP_DATA_FOLDER = path.join(HERE, 'compose', AIRFLOW_VERSION, 'tmp_data')
 
 E2E_METADATA = {
-    'docker_volumes': ['{}/datadog.yaml:/etc/datadog-agent/datadog.yaml'.format(TMP_DATA_FOLDER)],
+    'docker_volumes': [
+        f'{TMP_DATA_FOLDER}/datadog.yaml:/etc/datadog-agent/datadog.yaml'
+    ]
 }
 
 

@@ -171,7 +171,7 @@ class AgentCheck(object):
         agentConfig = kwargs.get('agentConfig', {})
         instances = kwargs.get('instances', [])
 
-        if len(args) > 0:
+        if args:
             name = args[0]
         if len(args) > 1:
             init_config = args[1]
@@ -209,7 +209,7 @@ class AgentCheck(object):
         # `self.hostname` is deprecated, use `datadog_agent.get_hostname()` instead
         self.hostname = datadog_agent.get_hostname()  # type: str
 
-        logger = logging.getLogger('{}.{}'.format(__name__, self.name))
+        logger = logging.getLogger(f'{__name__}.{self.name}')
         self.log = CheckLoggingAdapter(logger, self)
 
         metric_patterns = self.instance.get('metric_patterns', {}) if instance else {}
@@ -222,11 +222,11 @@ class AgentCheck(object):
         # TODO: Remove with Agent 5
         # Set proxy settings
         self.proxies = self._get_requests_proxy()
-        if not self.init_config:
-            self._use_agent_proxy = True
-        else:
-            self._use_agent_proxy = is_affirmative(self.init_config.get('use_agent_proxy', True))
-
+        self._use_agent_proxy = (
+            is_affirmative(self.init_config.get('use_agent_proxy', True))
+            if self.init_config
+            else True
+        )
         # TODO: Remove with Agent 5
         self.default_integration_http_timeout = float(self.agentConfig.get('default_integration_http_timeout', 9))
 
@@ -290,13 +290,15 @@ class AgentCheck(object):
         all_patterns = metric_patterns.get(option_name, [])
 
         if not isinstance(all_patterns, list):
-            raise ConfigurationError('Setting `{}` of `metric_patterns` must be an array'.format(option_name))
+            raise ConfigurationError(
+                f'Setting `{option_name}` of `metric_patterns` must be an array'
+            )
 
         metrics_patterns = []
         for i, entry in enumerate(all_patterns, 1):
             if not isinstance(entry, str):
                 raise ConfigurationError(
-                    'Entry #{} of setting `{}` of `metric_patterns` must be a string'.format(i, option_name)
+                    f'Entry #{i} of setting `{option_name}` of `metric_patterns` must be a string'
                 )
             if not entry:
                 self.log.debug(
@@ -306,19 +308,13 @@ class AgentCheck(object):
 
             metrics_patterns.append(entry)
 
-        if metrics_patterns:
-            return re.compile('|'.join(metrics_patterns))
-
-        return None
+        return re.compile('|'.join(metrics_patterns)) if metrics_patterns else None
 
     def _get_metric_limiter(self, name, instance=None):
         # type: (str, InstanceType) -> Optional[Limiter]
         limit = self._get_metric_limit(instance=instance)
 
-        if limit > 0:
-            return Limiter(name, 'metrics', limit, self.warning)
-
-        return None
+        return Limiter(name, 'metrics', limit, self.warning) if limit > 0 else None
 
     def _get_metric_limit(self, instance=None):
         # type: (InstanceType) -> int
@@ -439,13 +435,11 @@ class AgentCheck(object):
         models_config = models_config or {}
         typos = set()  # type: Set[str]
 
-        known_options = set([k for k, _ in models_config])  # type: Set[str]
+        known_options = {k for k, _ in models_config}
 
-        if not PY2:
-
-            if isinstance(models_config, BaseModel):
-                # Also add aliases, if any
-                known_options.update(set(models_config.dict(by_alias=True)))
+        if not PY2 and isinstance(models_config, BaseModel):
+            # Also add aliases, if any
+            known_options.update(set(models_config.dict(by_alias=True)))
 
         unknown_options = [option for option in user_configs.keys() if option not in known_options]  # type: List[str]
 
@@ -457,12 +451,10 @@ class AgentCheck(object):
                     similar_known_options.append((known_option, ratio))
                     typos.add(unknown_option)
 
-            if len(similar_known_options) > 0:
+            if similar_known_options:
                 similar_known_options.sort(key=lambda option: option[1], reverse=True)
                 similar_known_options_names = [option[0] for option in similar_known_options]  # type: List[str]
-                message = (
-                    'Detected potential typo in configuration option in {}/{} section: `{}`. Did you mean {}?'
-                ).format(self.name, level, unknown_option, ', or '.join(similar_known_options_names))
+                message = f"Detected potential typo in configuration option in {self.name}/{level} section: `{unknown_option}`. Did you mean {', or '.join(similar_known_options_names)}?"
                 self.log.warning(message)
         return typos
 
@@ -470,7 +462,7 @@ class AgentCheck(object):
         if package_path is None:
             # 'datadog_checks.<PACKAGE>.<MODULE>...'
             module_parts = self.__module__.split('.')
-            package_path = '{}.config_models'.format('.'.join(module_parts[:2]))
+            package_path = f"{'.'.join(module_parts[:2])}.config_models"
         if self._config_model_shared is None:
             raw_shared_config = self._get_config_model_initialization_data()
             intg_shared_config = self._get_shared_config()
@@ -513,26 +505,24 @@ class AgentCheck(object):
         if model is not None:
             try:
                 config_model = model(**config)
-            # TODO: remove the type ignore when we drop Python 2
             except ValidationError as e:  # type: ignore
                 errors = e.errors()
                 num_errors = len(errors)
                 message_lines = [
-                    'Detected {} error{} while loading configuration model `{}`:'.format(
-                        num_errors, 's' if num_errors > 1 else '', model_name
-                    )
+                    f"Detected {num_errors} error{'s' if num_errors > 1 else ''} while loading configuration model `{model_name}`:"
                 ]
 
                 for error in errors:
-                    message_lines.append(
-                        ' -> '.join(
-                            # Start array indexes at one for user-friendliness
-                            str(loc + 1) if isinstance(loc, int) else str(loc)
-                            for loc in error['loc']
+                    message_lines.extend(
+                        (
+                            ' -> '.join(
+                                # Start array indexes at one for user-friendliness
+                                str(loc + 1) if isinstance(loc, int) else str(loc)
+                                for loc in error['loc']
+                            ),
+                            f"  {error['msg']}",
                         )
                     )
-                    message_lines.append('  {}'.format(error['msg']))
-
                 raise_from(ConfigurationError('\n'.join(message_lines)), None)
             else:
                 return config_model
@@ -575,7 +565,7 @@ class AgentCheck(object):
 
     def _context_uid(self, mtype, name, tags=None, hostname=None):
         # type: (int, str, Sequence[str], str) -> str
-        return '{}-{}-{}-{}'.format(mtype, name, tags if tags is None else hash(frozenset(tags)), hostname)
+        return f'{mtype}-{name}-{tags if tags is None else hash(frozenset(tags))}-{hostname}'
 
     def submit_histogram_bucket(
         self, name, value, lower_bound, upper_bound, monotonic, hostname, tags, raw=False, flush_first_value=False
@@ -589,9 +579,7 @@ class AgentCheck(object):
         try:
             value = int(value)
         except ValueError:
-            err_msg = 'Histogram: {} has non integer value: {}. Only integer are valid bucket values (count).'.format(
-                repr(name), repr(value)
-            )
+            err_msg = f'Histogram: {repr(name)} has non integer value: {repr(value)}. Only integer are valid bucket values (count).'
             if using_stub_aggregator:
                 raise ValueError(err_msg)
             self.warning(err_msg)
@@ -680,9 +668,7 @@ class AgentCheck(object):
         try:
             value = float(value)
         except ValueError:
-            err_msg = 'Metric: {} has non float value: {}. Only float values can be submitted as metrics.'.format(
-                repr(name), repr(value)
-            )
+            err_msg = f'Metric: {repr(name)} has non float value: {repr(value)}. Only float values can be submitted as metrics.'
             if using_stub_aggregator:
                 raise ValueError(err_msg)
             self.warning(err_msg)
@@ -845,11 +831,7 @@ class AgentCheck(object):
         tags = self._normalize_tags_type(tags or [])
         if hostname is None:
             hostname = ''
-        if message is None:
-            message = ''
-        else:
-            message = to_native_string(message)
-
+        message = '' if message is None else to_native_string(message)
         message = self.sanitize(message)
 
         aggregator.submit_service_check(
@@ -918,7 +900,7 @@ class AgentCheck(object):
 
     def _persistent_cache_id(self, key):
         # type: (str) -> str
-        return '{}_{}'.format(self.check_id, key)
+        return f'{self.check_id}_{key}'
 
     def read_persistent_cache(self, key):
         # type: (str) -> str
@@ -1018,12 +1000,12 @@ class AgentCheck(object):
         if proxies and 'no_proxy' in proxies:
             proxies['no'] = proxies.pop('no_proxy')
 
-        return proxies if proxies else no_proxy_settings
+        return proxies or no_proxy_settings
 
     def _format_namespace(self, s, raw=False):
         # type: (str, bool) -> str
         if not raw and self.__NAMESPACE__:
-            return '{}.{}'.format(self.__NAMESPACE__, to_native_string(s))
+            return f'{self.__NAMESPACE__}.{to_native_string(s)}'
 
         return to_native_string(s)
 
@@ -1198,7 +1180,7 @@ class AgentCheck(object):
         if device_name:
             self._log_deprecation('device_name')
             try:
-                normalized_tags.append('device:{}'.format(to_native_string(device_name)))
+                normalized_tags.append(f'device:{to_native_string(device_name)}')
             except UnicodeError:
                 self.log.warning(
                     'Encoding error with device name `%r` for metric `%r`, ignoring tag', device_name, metric_name
@@ -1226,16 +1208,12 @@ class AgentCheck(object):
             tag_name = tag
             value = None
 
-        if tag_name in GENERIC_TAGS:
-            new_name = '{}_{}'.format(self.name, tag_name)
-            if value:
-                return '{}:{}'.format(new_name, value)
-            else:
-                return new_name
-        else:
+        if tag_name not in GENERIC_TAGS:
             return tag
+        new_name = f'{self.name}_{tag_name}'
+        return f'{new_name}:{value}' if value else new_name
 
     def get_debug_metric_tags(self):
-        tags = ['check_name:{}'.format(self.name), 'check_version:{}'.format(self.check_version)]
+        tags = [f'check_name:{self.name}', f'check_version:{self.check_version}']
         tags.extend(self.instance.get('tags', []))
         return tags

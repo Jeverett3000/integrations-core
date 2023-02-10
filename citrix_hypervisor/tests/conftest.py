@@ -14,14 +14,7 @@ from . import common
 
 @pytest.fixture(scope='session')
 def dd_environment():
-    with docker_run(
-        common.COMPOSE_FILE,
-        endpoints=[
-            '{}/rrd_updates'.format(common.E2E_INSTANCE[0]['url']),
-            '{}/rrd_updates'.format(common.E2E_INSTANCE[1]['url']),
-            '{}/rrd_updates'.format(common.E2E_INSTANCE[2]['url']),
-        ],
-    ):
+    with docker_run(common.COMPOSE_FILE, endpoints=[f"{common.E2E_INSTANCE[0]['url']}/rrd_updates", f"{common.E2E_INSTANCE[1]['url']}/rrd_updates", f"{common.E2E_INSTANCE[2]['url']}/rrd_updates"]):
         yield common.E2E_INSTANCE
 
 
@@ -36,11 +29,14 @@ def mock_requests_get(url, *args, **kwargs):
     if url_parts[0] != 'mocked':
         return MockResponse(status_code=404)
 
-    path = os.path.join(common.HERE, 'fixtures', 'standalone', '{}.json'.format(url_parts[1]))
-    if not os.path.exists(path):
-        return MockResponse(status_code=404)
-
-    return MockResponse(file_path=path)
+    path = os.path.join(
+        common.HERE, 'fixtures', 'standalone', f'{url_parts[1]}.json'
+    )
+    return (
+        MockResponse(file_path=path)
+        if os.path.exists(path)
+        else MockResponse(status_code=404)
+    )
 
 
 @pytest.fixture

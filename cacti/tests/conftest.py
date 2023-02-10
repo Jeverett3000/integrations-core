@@ -63,7 +63,7 @@ def run_docker_command(command):
 def dd_environment():
     with TempDir("nagios_var_log") as rrd_path:
         e2e_metadata = deepcopy(E2E_METADATA)
-        e2e_metadata['docker_volumes'] = ['{}:{}'.format(rrd_path, RRD_PATH)]
+        e2e_metadata['docker_volumes'] = [f'{rrd_path}:{RRD_PATH}']
 
         with docker_run(
             conditions=[WaitFor(setup_db), WaitFor(check_data_available), WaitFor(poll_cacti)],

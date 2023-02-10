@@ -17,17 +17,17 @@ MOCKED_INSTANCE = {
 }
 E2E_INSTANCE = [
     {
-        'url': 'http://{}:8081'.format(HOST),
+        'url': f'http://{HOST}:8081',
         'username': 'datadog',
         'password': 'password',
     },
     {
-        'url': 'http://{}:8082'.format(HOST),
+        'url': f'http://{HOST}:8082',
         'username': 'datadog',
         'password': 'password',
     },
     {
-        'url': 'http://{}:8083'.format(HOST),
+        'url': f'http://{HOST}:8083',
         'username': 'datadog',
         'password': 'password',
     },
@@ -95,4 +95,6 @@ def _assert_standalone_metrics(aggregator, custom_tags, count=1):
     ]
 
     for m in METRICS:
-        aggregator.assert_metric('citrix_hypervisor.{}'.format(m[0]), tags=m[1] + custom_tags, count=count)
+        aggregator.assert_metric(
+            f'citrix_hypervisor.{m[0]}', tags=m[1] + custom_tags, count=count
+        )

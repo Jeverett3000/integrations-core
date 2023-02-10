@@ -85,44 +85,48 @@ def enable_cluster():
     requests_data = []
     for node in [common.NODE2, common.NODE3]:
         _, node_name = node['name'].split('@')
-        requests_data.append(
-            {
-                "action": "enable_cluster",
-                "username": common.USER,
-                "password": common.PASSWORD,
-                "bind_address": "0.0.0.0",
-                "port": 5984,
-                "node_count": 3,
-                "remote_node": node_name,
-                "remote_current_user": common.USER,
-                "remote_current_password": common.PASSWORD,
-            }
+        requests_data.extend(
+            (
+                {
+                    "action": "enable_cluster",
+                    "username": common.USER,
+                    "password": common.PASSWORD,
+                    "bind_address": "0.0.0.0",
+                    "port": 5984,
+                    "node_count": 3,
+                    "remote_node": node_name,
+                    "remote_current_user": common.USER,
+                    "remote_current_password": common.PASSWORD,
+                },
+                {
+                    "action": "add_node",
+                    "username": common.USER,
+                    "password": common.PASSWORD,
+                    "host": node_name,
+                    "port": 5984,
+                    "singlenode": False,
+                },
+            )
         )
-        requests_data.append(
-            {
-                "action": "add_node",
-                "username": common.USER,
-                "password": common.PASSWORD,
-                "host": node_name,
-                "port": 5984,
-                "singlenode": False,
-            }
-        )
-
     resp_data = None
     for data in requests_data:
-        resp = requests.post("{}/_cluster_setup".format(common.URL), json=data, auth=auth, headers=headers)
+        resp = requests.post(
+            f"{common.URL}/_cluster_setup",
+            json=data,
+            auth=auth,
+            headers=headers,
+        )
         resp_data = resp.json()
 
-    resp = requests.get("{}/_membership".format(common.URL), auth=auth, headers=headers)
+    resp = requests.get(f"{common.URL}/_membership", auth=auth, headers=headers)
     membership = resp.json()
 
     expected_nb_nodes = 3
     actual_nb_nodes = len(membership['cluster_nodes'])
     error_msg = [
-        "Expected {} cluster nodes, but only found {}".format(expected_nb_nodes, actual_nb_nodes),
-        "Membership response: {}".format(membership),
-        "Last cluster setup response: {}".format(resp_data),
+        f"Expected {expected_nb_nodes} cluster nodes, but only found {actual_nb_nodes}",
+        f"Membership response: {membership}",
+        f"Last cluster setup response: {resp_data}",
     ]
     assert actual_nb_nodes == expected_nb_nodes, "\n".join(error_msg)
 
@@ -136,9 +140,9 @@ def generate_data(couch_version):
     headers = {'Accept': 'text/json'}
 
     # Generate a test database
-    requests.put("{}/kennel".format(common.URL), auth=auth, headers=headers)
+    requests.put(f"{common.URL}/kennel", auth=auth, headers=headers)
     for i in range(5):
-        requests.put("{}/db{}".format(common.URL, i), auth=auth, headers=headers)
+        requests.put(f"{common.URL}/db{i}", auth=auth, headers=headers)
 
     # Populate the database
     data = {
@@ -148,7 +152,12 @@ def generate_data(couch_version):
             "by_data": {"map": "function(doc) { emit(doc.data, doc); }"},
         },
     }
-    requests.put("{}/kennel/_design/dummy".format(common.URL), json=data, auth=auth, headers=headers)
+    requests.put(
+        f"{common.URL}/kennel/_design/dummy",
+        json=data,
+        auth=auth,
+        headers=headers,
+    )
 
 
 def check_node_stats():
@@ -156,17 +165,17 @@ def check_node_stats():
     headers = {'Accept': 'text/json'}
     # Check all nodes have stats
     for node in common.ALL_NODES:
-        url = "{}/_node/{}/_stats".format(common.URL, node['name'])
+        url = f"{common.URL}/_node/{node['name']}/_stats"
         res = requests.get(url, auth=auth, headers=headers)
         data = res.json()
-        assert "global_changes" in data, "Invalid stats. Get stats url: {}".format(url)
+        assert "global_changes" in data, f"Invalid stats. Get stats url: {url}"
 
 
 def send_replication():
     """
     Send replication task to trigger tasks
     """
-    replicator_url = "{}/_replicate".format(common.NODE1['server'])
+    replicator_url = f"{common.NODE1['server']}/_replicate"
 
     replication_body = {
         '_id': 'my_replication_id',
@@ -177,7 +186,7 @@ def send_replication():
     }
     for i in range(5):
         body = replication_body.copy()
-        body['_id'] = 'my_replication_id_{}'.format(i)
+        body['_id'] = f'my_replication_id_{i}'
         body['target'] = body['target'] + str(i)
         r = requests.post(
             replicator_url,
@@ -192,10 +201,12 @@ def get_replication():
     """
     Attempt to get active replication tasks
     """
-    task_url = "{}/_active_tasks".format(common.NODE1['server'])
+    task_url = f"{common.NODE1['server']}/_active_tasks"
 
     r = requests.get(task_url, auth=(common.NODE1['user'], common.NODE1['password']))
     r.raise_for_status()
     active_tasks = r.json()
     count = len(active_tasks)
-    assert count > 0, "Expect active tasks but none found.\nactive_tasks response: {}".format(active_tasks)
+    assert (
+        count > 0
+    ), f"Expect active tasks but none found.\nactive_tasks response: {active_tasks}"

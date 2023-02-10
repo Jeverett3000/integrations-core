@@ -37,11 +37,11 @@ def dd_environment():
         log_patterns = ['Starting listening for CQL clients', 'All sessions completed']
 
     with docker_run(
-        compose_file,
-        service_name=common.CASSANDRA_CONTAINER_NAME,
-        log_patterns=['Listening for thrift clients'],
-    ):
-        cassandra_seed = get_container_ip("{}".format(common.CASSANDRA_CONTAINER_NAME))
+            compose_file,
+            service_name=common.CASSANDRA_CONTAINER_NAME,
+            log_patterns=['Listening for thrift clients'],
+        ):
+        cassandra_seed = get_container_ip(f"{common.CASSANDRA_CONTAINER_NAME}")
         env['CASSANDRA_SEEDS'] = cassandra_seed
         with docker_run(
             compose_file,

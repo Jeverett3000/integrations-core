@@ -12,19 +12,18 @@ class CockroachdbCheck(OpenMetricsBaseCheck):
     def __new__(cls, name, init_config, instances):
         instance = instances[0]
 
-        if 'openmetrics_endpoint' in instance:
-            if PY2:
-                raise ConfigurationError(
-                    'This version of the integration is only available when using Python 3. '
-                    'Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3/ '
-                    'for more information or use the older style config.'
-                )
-            # TODO: when we drop Python 2 move this import up top
-            from .check import CockroachdbCheckV2
-
-            return CockroachdbCheckV2(name, init_config, instances)
-        else:
+        if 'openmetrics_endpoint' not in instance:
             return super(CockroachdbCheck, cls).__new__(cls)
+        if PY2:
+            raise ConfigurationError(
+                'This version of the integration is only available when using Python 3. '
+                'Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3/ '
+                'for more information or use the older style config.'
+            )
+        # TODO: when we drop Python 2 move this import up top
+        from .check import CockroachdbCheckV2
+
+        return CockroachdbCheckV2(name, init_config, instances)
 
     def __init__(self, name, init_config, instances):
         super(CockroachdbCheck, self).__init__(

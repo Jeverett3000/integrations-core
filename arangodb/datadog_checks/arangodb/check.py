@@ -22,25 +22,22 @@ class ArangodbCheck(OpenMetricsBaseCheckV2, ConfigMixin):
         super(ArangodbCheck, self).__init__(name, init_config, instances)
         self.openmetrics_endpoint = self.instance.get('openmetrics_endpoint')
         parsed_endpoint = urlparse(self.openmetrics_endpoint)
-        self.base_url = "{}://{}".format(parsed_endpoint.scheme, parsed_endpoint.netloc)
+        self.base_url = f"{parsed_endpoint.scheme}://{parsed_endpoint.netloc}"
 
     def refresh_scrapers(self):
         base_tags = []
 
         for tag_name, endpoint in self.SERVER_TAGS.items():
-            tag = self.get_server_tag(tag_name, endpoint)
-            if tag:
+            if tag := self.get_server_tag(tag_name, endpoint):
                 base_tags.append(tag)
 
         self.set_dynamic_tags(*base_tags)
 
     def get_default_config(self):
-        default_config = {
+        return {
             'openmetrics_endpoint': self.openmetrics_endpoint,
             'metrics': METRIC_MAP,
         }
-
-        return default_config
 
     def get_server_tag(self, tag_name, endpoint):
         """
@@ -52,7 +49,7 @@ class ArangodbCheck(OpenMetricsBaseCheckV2, ConfigMixin):
             response = self.http.get(tag_endpoint)
             response.raise_for_status()
 
-            return 'server_{}:{}'.format(tag_name, response.json()[tag_name])
+            return f'server_{tag_name}:{response.json()[tag_name]}'
 
         except HTTPError:
             self.log.debug("Unable to get server %s, skipping `server_%s` tag.", tag_name, tag_name)

@@ -156,9 +156,11 @@ for raw_metric_name, metric_name in METRIC_MAP.items():
 
 def assert_metrics(aggregator):
     for metric in EXPECTED_METRICS:
-        aggregator.assert_metric('cockroachdb.{}'.format(metric), at_least=0)
+        aggregator.assert_metric(f'cockroachdb.{metric}', at_least=0)
 
     # Custom transformer
     aggregator.assert_metric('cockroachdb.build.timestamp')
 
-    assert aggregator.metrics_asserted_pct > 80, 'Missing metrics {}'.format(aggregator.not_asserted())
+    assert (
+        aggregator.metrics_asserted_pct > 80
+    ), f'Missing metrics {aggregator.not_asserted()}'

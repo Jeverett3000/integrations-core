@@ -67,7 +67,7 @@ TOTAL_STATS = [
     'ram.used_by_data',
 ]
 
-BUCKET_TAGS = CHECK_TAGS + ['bucket:{}'.format(BUCKET_NAME)]
+BUCKET_TAGS = CHECK_TAGS + [f'bucket:{BUCKET_NAME}']
 
 
 @pytest.mark.integration
@@ -79,8 +79,8 @@ def test_service_check(aggregator, instance, couchbase_container_ip):
     couchbase = Couchbase('couchbase', {}, instances=[instance])
     couchbase.check(None)
 
-    NODE_HOST = '{}:{}'.format(couchbase_container_ip, PORT)
-    NODE_TAGS = ['node:{}'.format(NODE_HOST)]
+    NODE_HOST = f'{couchbase_container_ip}:{PORT}'
+    NODE_TAGS = [f'node:{NODE_HOST}']
 
     aggregator.assert_service_check(SERVICE_CHECK_NAME, tags=CHECK_TAGS, status=Couchbase.OK, count=1)
     aggregator.assert_service_check(
@@ -102,8 +102,8 @@ def test_e2e(dd_agent_check, instance, couchbase_container_ip):
     _assert_bucket_metrics(aggregator, BUCKET_TAGS, device=BUCKET_NAME)
 
     # Assert 'couchbase.by_node.' metrics
-    node_tags = CHECK_TAGS + ['node:{}:{}'.format(couchbase_container_ip, PORT)]
-    device = '{}:{}'.format(couchbase_container_ip, PORT)
+    node_tags = CHECK_TAGS + [f'node:{couchbase_container_ip}:{PORT}']
+    device = f'{couchbase_container_ip}:{PORT}'
     _assert_stats(aggregator, node_tags, device=device)
 
     aggregator.assert_all_metrics_covered()
@@ -121,9 +121,11 @@ def test_query_monitoring_metrics(aggregator, dd_run_check, instance_query, couc
 
     query_stats_optional = set(QUERY_STATS).difference(QUERY_STATS_ALWAYS_PRESENT)
     for mname in QUERY_STATS_ALWAYS_PRESENT:
-        aggregator.assert_metric('couchbase.query.{}'.format(mname), tags=CHECK_TAGS, count=1)
+        aggregator.assert_metric(f'couchbase.query.{mname}', tags=CHECK_TAGS, count=1)
     for mname in query_stats_optional:
-        aggregator.assert_metric('couchbase.query.{}'.format(mname), tags=CHECK_TAGS, at_least=0)
+        aggregator.assert_metric(
+            f'couchbase.query.{mname}', tags=CHECK_TAGS, at_least=0
+        )
     aggregator.assert_metrics_using_metadata(get_metadata_metrics())
 
 
@@ -190,15 +192,22 @@ def _assert_bucket_metrics(aggregator, tags, device=None):
             aggregator.assert_metric(metric, tags=tags, count=1, device=device)
             bucket_metrics.append(metric)
 
-    assert len(bucket_metrics) > 2, "Expected at least 3 bucket metrics found: " + str(bucket_metrics)
+    assert (
+        len(bucket_metrics) > 2
+    ), f"Expected at least 3 bucket metrics found: {bucket_metrics}"
 
 
 def _assert_stats(aggregator, node_tags, device=None):
     for mname in NODE_STATS:
-        aggregator.assert_metric('couchbase.by_node.{}'.format(mname), tags=node_tags, count=1, device=device)
+        aggregator.assert_metric(
+            f'couchbase.by_node.{mname}',
+            tags=node_tags,
+            count=1,
+            device=device,
+        )
     # Assert 'couchbase.' metrics
     for mname in TOTAL_STATS:
-        aggregator.assert_metric('couchbase.{}'.format(mname), tags=CHECK_TAGS, count=1)
+        aggregator.assert_metric(f'couchbase.{mname}', tags=CHECK_TAGS, count=1)
 
 
 @pytest.mark.skipif(COUCHBASE_MAJOR_VERSION < 7, reason='Index metrics are only available for Couchbase 7+')
@@ -235,12 +244,12 @@ def test_metrics(aggregator, dd_run_check, instance, couchbase_container_ip):
     dd_run_check(couchbase)
 
     # Assert each type of metric (buckets, nodes, totals) except query
-    _assert_bucket_metrics(aggregator, BUCKET_TAGS + ['device:{}'.format(BUCKET_NAME)])
+    _assert_bucket_metrics(aggregator, BUCKET_TAGS + [f'device:{BUCKET_NAME}'])
 
     # Assert 'couchbase.by_node.' metrics
     node_tags = CHECK_TAGS + [
-        'node:{}:{}'.format(couchbase_container_ip, PORT),
-        'device:{}:{}'.format(couchbase_container_ip, PORT),
+        f'node:{couchbase_container_ip}:{PORT}',
+        f'device:{couchbase_container_ip}:{PORT}',
     ]
     _assert_stats(aggregator, node_tags)
 

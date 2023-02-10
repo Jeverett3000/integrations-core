@@ -26,7 +26,7 @@ class TestCoreDNS:
 
         # `.cache_hits_count` metric is only tested against the metrics fixtures file
         # because the metric is not available in docker/e2e.
-        metrics = METRICS + [NAMESPACE + '.cache_hits_count']
+        metrics = METRICS + [f'{NAMESPACE}.cache_hits_count']
 
         for metric in metrics:
             aggregator.assert_metric(metric)
@@ -45,7 +45,7 @@ class TestCoreDNS:
 
         # `.cache_hits_count.count` metric is only tested against the metrics fixtures file
         # because the metric is not available in docker/e2e.
-        metrics = METRICS_V2 + [NAMESPACE + '.cache_hits_count.count']
+        metrics = METRICS_V2 + [f'{NAMESPACE}.cache_hits_count.count']
 
         for metric in metrics:
             aggregator.assert_metric(metric)

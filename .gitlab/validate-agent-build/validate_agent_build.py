@@ -33,8 +33,11 @@ def get_remaining_jobs(pipeline_id):
     for scope in scopes:
         all_jobs.extend(_get_jobs(pipeline_id, scope=scope))
 
-    jobs = [j for j in all_jobs if not j['allow_failure'] and j['stage'] in STAGES_TO_CHECK]
-    return jobs
+    return [
+        j
+        for j in all_jobs
+        if not j['allow_failure'] and j['stage'] in STAGES_TO_CHECK
+    ]
 
 
 def get_failed_jobs(pipeline_id):
@@ -79,11 +82,9 @@ if __name__ == '__main__':
             break
 
         print(f"Still {len(remaining_jobs)} are pending...")
-        failed_jobs = [
-            j for j in remaining_jobs if
-            j['status'] in ['failed', 'canceled']
-        ]
-        if failed_jobs:
+        if failed_jobs := [
+            j for j in remaining_jobs if j['status'] in ['failed', 'canceled']
+        ]:
             for job in failed_jobs:
                 print(f"ERROR: Job {job['web_url']} has encountered a failure, exiting.")
             sys.exit(1)

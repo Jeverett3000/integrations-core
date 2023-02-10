@@ -28,19 +28,18 @@ class AmazonMskCheck(OpenMetricsBaseCheck):
     def __new__(cls, name, init_config, instances):
         instance = instances[0]
 
-        if is_affirmative(instance.get('use_openmetrics', False)):
-            if PY2:
-                raise ConfigurationError(
-                    "Openmetrics on this integration is only available when using py3. "
-                    "Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3 "
-                    "for more information"
-                )
-            # TODO: when we drop Python 2 move this import up top
-            from .check import AmazonMskCheckV2
-
-            return AmazonMskCheckV2(name, init_config, instances)
-        else:
+        if not is_affirmative(instance.get('use_openmetrics', False)):
             return super(AmazonMskCheck, cls).__new__(cls)
+        if PY2:
+            raise ConfigurationError(
+                "Openmetrics on this integration is only available when using py3. "
+                "Check https://docs.datadoghq.com/agent/guide/agent-v6-python-3 "
+                "for more information"
+            )
+        # TODO: when we drop Python 2 move this import up top
+        from .check import AmazonMskCheckV2
+
+        return AmazonMskCheckV2(name, init_config, instances)
 
     def __init__(self, name, init_config, instances):
         super(AmazonMskCheck, self).__init__(
@@ -113,14 +112,14 @@ class AmazonMskCheck(OpenMetricsBaseCheck):
 
         for node_info in response['NodeInfoList']:
             broker_info = node_info['BrokerNodeInfo']
-            self._scraper_config['_metric_tags'] = ['broker_id:{}'.format(broker_info['BrokerId'])]
+            self._scraper_config['_metric_tags'] = [f"broker_id:{broker_info['BrokerId']}"]
 
             for endpoint in broker_info['Endpoints']:
                 for (port, metrics_mapper, type_overrides) in self._exporter_data:
                     if port:
-                        self._scraper_config['prometheus_url'] = '{}://{}:{}{}'.format(
-                            self._endpoint_prefix, endpoint, port, self._prometheus_metrics_path
-                        )
+                        self._scraper_config[
+                            'prometheus_url'
+                        ] = f'{self._endpoint_prefix}://{endpoint}:{port}{self._prometheus_metrics_path}'
                         self._scraper_config['metrics_mapper'] = metrics_mapper
                         self._scraper_config['type_overrides'] = type_overrides
 
@@ -145,10 +144,10 @@ class AmazonMskCheck(OpenMetricsBaseCheck):
         self._scraper_config['custom_tags'] = list(self._scraper_config['custom_tags'])
 
         self._cluster_arn = cluster_arn
-        self._scraper_config['custom_tags'].append('cluster_arn:{}'.format(self._cluster_arn))
+        self._scraper_config['custom_tags'].append(f'cluster_arn:{self._cluster_arn}')
 
         self._region_name = region_name
-        self._scraper_config['custom_tags'].append('region_name:{}'.format(self._region_name))
+        self._scraper_config['custom_tags'].append(f'region_name:{self._region_name}')
 
     def get_scraper_config(self, instance):
         # This validation is called during `__init__` but we don't need it

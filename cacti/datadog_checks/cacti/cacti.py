@@ -88,18 +88,15 @@ class CactiCheck(AgentCheck):
                 # Don't run the check if the whitelist is unavailable
                 self.log.exception("Unable to read whitelist file at %s", whitelist)
 
-            wl = open(whitelist)
-            for line in wl:
-                patterns.append(line.strip())
-            wl.close()
-
+            with open(whitelist) as wl:
+                patterns.extend(line.strip() for line in wl)
         return patterns
 
     def _get_config(self):
         required = ['mysql_host', 'mysql_user', 'rrd_path']
         for param in required:
             if not self.instance.get(param):
-                raise ConfigurationError("Cacti instance missing %s. Skipping." % param)
+                raise ConfigurationError(f"Cacti instance missing {param}. Skipping.")
 
         host = self.instance.get('mysql_host')
         user = self.instance.get('mysql_user')
@@ -137,12 +134,12 @@ class CactiCheck(AgentCheck):
             return metric_count
 
         # Find the consolidation functions for the RRD metrics
-        c_funcs = set([v for k, v in info.items() if k.endswith('.cf')])
+        c_funcs = {v for k, v in info.items() if k.endswith('.cf')}
         if not c_funcs:
             self.log.debug("No funcs found for %s", rrd_path)
 
         for c in list(c_funcs):
-            last_ts_key = '%s.%s' % (rrd_path, c)
+            last_ts_key = f'{rrd_path}.{c}'
             if last_ts_key not in self.last_ts:
                 self.last_ts[last_ts_key] = int(time.time())
                 continue
@@ -193,7 +190,9 @@ class CactiCheck(AgentCheck):
 
         c = connection.cursor()
 
-        and_parameters = " OR ".join(["hsc.field_name = '%s'" % field_name for field_name in field_names])
+        and_parameters = " OR ".join(
+            [f"hsc.field_name = '{field_name}'" for field_name in field_names]
+        )
 
         # Check for the existence of the `host_snmp_cache` table
         rrd_query = """
@@ -223,7 +222,7 @@ class CactiCheck(AgentCheck):
                 res.append((hostname, device_name, rrd_path))
 
         # Collect stats
-        num_hosts = len(set([r[0] for r in res]))
+        num_hosts = len({r[0] for r in res})
         self.gauge('cacti.rrd.count', len(res), tags=tags)
         self.gauge('cacti.hosts.count', num_hosts, tags=tags)
 
@@ -240,15 +239,13 @@ class CactiCheck(AgentCheck):
         try:
             m_name = CACTI_TO_DD[m_name]
             if aggr != 'avg':
-                m_name += '.{}'.format(aggr)
+                m_name += f'.{aggr}'
             return m_name
         except KeyError:
-            return "cacti.{}.{}".format(m_name.lower(), aggr)
+            return f"cacti.{m_name.lower()}.{aggr}"
 
     @staticmethod
     def _transform_metric(m_name, val):
         """Add any special case transformations here."""
         # Report memory in MB
-        if m_name[0:11] in ('system.mem.', 'system.disk'):
-            return val / 1024
-        return val
+        return val / 1024 if m_name[:11] in ('system.mem.', 'system.disk') else val

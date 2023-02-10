@@ -130,7 +130,7 @@ class CheckDefinition(object):
         return list(errors)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, ", ".join(f"{k}={v}" for k, v in self.__dict__.items()))
+        return f'{self.__class__.__name__}({", ".join(f"{k}={v}" for k, v in self.__dict__.items())})'
 
 
 def print_err(*args, **kwargs):
@@ -145,11 +145,7 @@ def get_all_checks() -> List[CheckDefinition]:
     ]
     check_dirs.sort()
 
-    all_checks = []
-    for check_dir in check_dirs:
-        all_checks.append(CheckDefinition(check_dir))
-
-    return all_checks
+    return [CheckDefinition(check_dir) for check_dir in check_dirs]
 
 
 def get_all_log_pipelines_ids():
@@ -176,15 +172,14 @@ logs_to_metrics_mapping = get_log_to_metric_map(sys.argv[1])
 assert len(logs_to_metrics_mapping) > 0
 
 all_checks = list(get_all_checks())
-assert len(all_checks) > 0
+assert all_checks
 for check in all_checks:
     if check.log_source in logs_to_metrics_mapping:
         check.is_defined_in_web_ui = True
 
 validation_errors_per_check = {}
 for check in all_checks:
-    errors = check.validate()
-    if errors:
+    if errors := check.validate():
         validation_errors_per_check[check.name] = errors
 
 if not validation_errors_per_check:

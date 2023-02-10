@@ -27,12 +27,8 @@ INSTANCES = [common.NODE1, common.NODE2, common.NODE3]
 @pytest.fixture(scope="module")
 def gauges():
     res = defaultdict(list)
-    if PY2:
-        mode = "rb"
-    else:
-        mode = "r"
-
-    with open("{}/../metadata.csv".format(common.HERE), mode) as csvfile:
+    mode = "rb" if PY2 else "r"
+    with open(f"{common.HERE}/../metadata.csv", mode) as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
             if row[0] == "couchdb.couchdb.httpd.all_docs_timeouts" and common.COUCH_MAJOR_VERSION == 2:
@@ -91,7 +87,7 @@ def _assert_check(aggregator, gauges):
     Testing Couchdb2 check.
     """
     for config in INSTANCES:
-        expected_tags = ["instance:{}".format(config["name"])]
+        expected_tags = [f'instance:{config["name"]}']
         for gauge in gauges["cluster_gauges"]:
             aggregator.assert_metric(gauge, tags=expected_tags)
 
@@ -100,20 +96,20 @@ def _assert_check(aggregator, gauges):
 
     for db, dd in {"kennel": "dummy"}.items():
         for gauge in gauges["by_dd_gauges"]:
-            expected_tags = ["design_document:{}".format(dd), "language:javascript", "db:{}".format(db)]
+            expected_tags = [f"design_document:{dd}", "language:javascript", f"db:{db}"]
             aggregator.assert_metric(gauge, tags=expected_tags)
 
     for db in ["kennel", "db1"]:
         for gauge in gauges["by_db_gauges"]:
-            expected_tags = ["db:{}".format(db)]
+            expected_tags = [f"db:{db}"]
             aggregator.assert_metric(gauge, tags=expected_tags)
 
-    expected_tags = ["instance:{}".format(common.NODE1["name"])]
+    expected_tags = [f'instance:{common.NODE1["name"]}']
     # One for the version, one for the server stats
     aggregator.assert_service_check(CouchDb.SERVICE_CHECK_NAME, status=CouchDb.OK, tags=expected_tags, count=2)
 
     for node in [common.NODE2, common.NODE3]:
-        expected_tags = ["instance:{}".format(node["name"])]
+        expected_tags = [f'instance:{node["name"]}']
         # One for the server stats, the version is already loaded
         aggregator.assert_service_check(CouchDb.SERVICE_CHECK_NAME, status=CouchDb.OK, tags=expected_tags, count=2)
 
@@ -145,12 +141,12 @@ def test_db_inclusion(aggregator, gauges, param_name):
 
     for _ in configs:
         for db in ['db0']:
-            expected_tags = ["db:{}".format(db)]
+            expected_tags = [f"db:{db}"]
             for gauge in gauges["by_db_gauges"]:
                 aggregator.assert_metric(gauge, tags=expected_tags)
 
         for db in ['db1']:
-            expected_tags = ["db:{}".format(db)]
+            expected_tags = [f"db:{db}"]
             for gauge in gauges["by_db_gauges"]:
                 aggregator.assert_metric(gauge, tags=expected_tags, count=0)
 
@@ -172,12 +168,12 @@ def test_db_exclusion(aggregator, gauges, param_name):
 
     for _ in configs:
         for db in ['db1']:
-            expected_tags = ["db:{}".format(db)]
+            expected_tags = [f"db:{db}"]
             for gauge in gauges["by_db_gauges"]:
                 aggregator.assert_metric(gauge, tags=expected_tags)
 
         for db in ['db0']:
-            expected_tags = ["db:{}".format(db)]
+            expected_tags = [f"db:{db}"]
             for gauge in gauges["by_db_gauges"]:
                 aggregator.assert_metric(gauge, tags=expected_tags, count=0)
 
@@ -193,7 +189,7 @@ def test_check_without_names(aggregator, gauges):
     configs = [common.NODE1, common.NODE2, common.NODE3]
 
     for config in configs:
-        expected_tags = ["instance:{}".format(config["name"])]
+        expected_tags = [f'instance:{config["name"]}']
         for gauge in gauges["cluster_gauges"]:
             aggregator.assert_metric(gauge, tags=expected_tags)
 
@@ -208,21 +204,21 @@ def test_check_without_names(aggregator, gauges):
         aggregator.assert_metric(gauge, at_least=0)
 
     for db, dd in {"kennel": "dummy"}.items():
-        expected_tags = ["design_document:{}".format(dd), "language:javascript", "db:{}".format(db)]
+        expected_tags = [f"design_document:{dd}", "language:javascript", f"db:{db}"]
         for gauge in gauges["by_dd_gauges"]:
             aggregator.assert_metric(gauge, tags=expected_tags)
 
     for db in ["kennel"]:
-        expected_tags = ["db:{}".format(db)]
+        expected_tags = [f"db:{db}"]
         for gauge in gauges["by_db_gauges"]:
             aggregator.assert_metric(gauge, tags=expected_tags)
 
-    expected_tags = ["instance:{}".format(config["server"])]
+    expected_tags = [f'instance:{config["server"]}']
     # One for the version, one for the server stats
     aggregator.assert_service_check(CouchDb.SERVICE_CHECK_NAME, status=CouchDb.OK, tags=expected_tags, count=1)
 
     for node in [common.NODE2, common.NODE3]:
-        expected_tags = ["instance:{}".format(node["name"])]
+        expected_tags = [f'instance:{node["name"]}']
         # One for the server stats, the version is already loaded
         aggregator.assert_service_check(CouchDb.SERVICE_CHECK_NAME, status=CouchDb.OK, tags=expected_tags, count=1)
 
@@ -319,9 +315,7 @@ def test_indexing_metrics(aggregator, gauges, active_tasks):
     from datadog_checks.couch import couch
 
     def _get(url, tags, run_check=False):
-        if '_active_tasks' in url:
-            return active_tasks
-        return {}
+        return active_tasks if '_active_tasks' in url else {}
 
     # run the check on all instances
     for config in [common.NODE1, common.NODE2, common.NODE3]:
@@ -339,6 +333,9 @@ def test_indexing_metrics(aggregator, gauges, active_tasks):
 @pytest.mark.usefixtures('dd_environment')
 @pytest.mark.integration
 def test_view_compaction_metrics(aggregator, gauges):
+
+
+
     class LoadGenerator(threading.Thread):
         STOP = 0
         RUN = 1
@@ -362,13 +359,13 @@ def test_view_compaction_metrics(aggregator, gauges):
                 self.generate_views()
 
         def generate_views(self):
-            url = '{}/kennel/_design/dummy/_view/all'.format(self._server)
+            url = f'{self._server}/kennel/_design/dummy/_view/all'
             try:
                 r = requests.get(url, auth=self._auth, timeout=1)
                 r.raise_for_status()
             except requests.exceptions.Timeout:
                 None
-            url = '{}/kennel/_design/dummy/_view/by_data'.format(self._server)
+            url = f'{self._server}/kennel/_design/dummy/_view/by_data'
             try:
                 r = requests.get(url, auth=self._auth, timeout=1)
                 r.raise_for_status()
@@ -378,25 +375,26 @@ def test_view_compaction_metrics(aggregator, gauges):
         def update_doc(self, doc):
             body = {'data': str(random.randint(0, 1000000000)), '_rev': doc['rev']}
 
-            url = '{}/kennel/{}'.format(self._server, doc['id'])
+            url = f"{self._server}/kennel/{doc['id']}"
             r = requests.put(url, auth=self._auth, headers={'Content-Type': 'application/json'}, json=body)
             r.raise_for_status()
             return r.json()
 
         def post_doc(self, doc_id):
             body = {"_id": doc_id, "data": str(time.time())}
-            url = '{}/kennel'.format(self._server)
+            url = f'{self._server}/kennel'
             r = requests.post(url, auth=self._auth, headers={'Content-Type': 'application/json'}, json=body)
             r.raise_for_status()
             return r.json()
 
         def compact_views(self):
-            url = '{}/kennel/_compact/dummy'.format(self._server)
+            url = f'{self._server}/kennel/_compact/dummy'
             r = requests.post(url, auth=self._auth, headers={'Content-Type': 'application/json'})
             r.raise_for_status()
 
         def stop(self):
             self._status = self.STOP
+
 
     threads = []
     for _ in range(40):

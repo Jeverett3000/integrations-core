@@ -6,18 +6,18 @@ from six import iteritems
 
 METRIC_PREFIX = "cisco_aci"
 
-FABRIC_PREFIX = METRIC_PREFIX + ".fabric"
+FABRIC_PREFIX = f"{METRIC_PREFIX}.fabric"
 
 FABRIC_METRICS = {
     "fabricNodeHealth": {
-        "healthLast": FABRIC_PREFIX + ".node.health.cur",
-        "healthMax": FABRIC_PREFIX + ".node.health.max",
-        "healthMin": FABRIC_PREFIX + ".node.health.min",
+        "healthLast": f"{FABRIC_PREFIX}.node.health.cur",
+        "healthMax": f"{FABRIC_PREFIX}.node.health.max",
+        "healthMin": f"{FABRIC_PREFIX}.node.health.min",
     },
     "fabricOverallHealth": {
-        "healthLast": FABRIC_PREFIX + ".pod.health.cur",
-        "healthMax": FABRIC_PREFIX + ".pod.health.max",
-        "healthMin": FABRIC_PREFIX + ".pod.health.min",
+        "healthLast": f"{FABRIC_PREFIX}.pod.health.cur",
+        "healthMax": f"{FABRIC_PREFIX}.pod.health.max",
+        "healthMin": f"{FABRIC_PREFIX}.pod.health.min",
     },
     "fvFltCounter": {
         "critcountLast": FABRIC_PREFIX + ".{}.fault_counter.crit",
@@ -58,9 +58,9 @@ FABRIC_METRICS = {
     },
 }
 
-TENANT_PREFIX = METRIC_PREFIX + ".tenant"
-APPLICATION_PREFIX = TENANT_PREFIX + ".application"
-ENDPOINT_GROUP_PREFIX = APPLICATION_PREFIX + ".endpoint"
+TENANT_PREFIX = f"{METRIC_PREFIX}.tenant"
+APPLICATION_PREFIX = f"{TENANT_PREFIX}.application"
+ENDPOINT_GROUP_PREFIX = f"{APPLICATION_PREFIX}.endpoint"
 
 
 def make_tenant_metrics():
@@ -130,67 +130,78 @@ def make_tenant_metrics():
 
 # Some metrics will show zeroes only when the counter resets and that makes the metric's values problematic
 # in that case it's preferable to submit nothing
-METRICS_NO_ZEROES = [TENANT_PREFIX + ".overall_health"]
+METRICS_NO_ZEROES = [f"{TENANT_PREFIX}.overall_health"]
 
-CAPACITY_PREFIX = METRIC_PREFIX + ".capacity"
-LEAF_CAPACITY_PREFIX = CAPACITY_PREFIX + ".leaf"
+CAPACITY_PREFIX = f"{METRIC_PREFIX}.capacity"
+LEAF_CAPACITY_PREFIX = f"{CAPACITY_PREFIX}.leaf"
 
 CAPACITY_CONTEXT_METRICS = {
-    "l2BD": {"metric_name": LEAF_CAPACITY_PREFIX + ".bridge_domain", "limit_value": 3500},
-    "fvEpP": {"metric_name": LEAF_CAPACITY_PREFIX + ".endpoint_group", "limit_value": 3500},
-    "l3Dom": {"metric_name": LEAF_CAPACITY_PREFIX + ".vrf", "limit_value": 800},
+    "l2BD": {
+        "metric_name": f"{LEAF_CAPACITY_PREFIX}.bridge_domain",
+        "limit_value": 3500,
+    },
+    "fvEpP": {
+        "metric_name": f"{LEAF_CAPACITY_PREFIX}.endpoint_group",
+        "limit_value": 3500,
+    },
+    "l3Dom": {
+        "metric_name": f"{LEAF_CAPACITY_PREFIX}.vrf",
+        "limit_value": 800,
+    },
 }
 
 EQPT_CAPACITY_METRICS = {
-    # cisco_aci api >= 3.1
     "eqptcapacityL3TotalUsageCap5min": {
-        "v4TotalEpCapCum": LEAF_CAPACITY_PREFIX + ".ipv4_endpoint.limit",
-        "v6TotalEpCapCum": LEAF_CAPACITY_PREFIX + ".ipv6_endpoint.limit",
+        "v4TotalEpCapCum": f"{LEAF_CAPACITY_PREFIX}.ipv4_endpoint.limit",
+        "v6TotalEpCapCum": f"{LEAF_CAPACITY_PREFIX}.ipv6_endpoint.limit",
     },
-    # cisco_aci api >= 3.1
     "eqptcapacityL3TotalUsage5min": {
-        "v4TotalEpCum": LEAF_CAPACITY_PREFIX + ".ipv4_endpoint.utilized",
-        "v6TotalEpCum": LEAF_CAPACITY_PREFIX + ".ipv6_endpoint.utilized",
+        "v4TotalEpCum": f"{LEAF_CAPACITY_PREFIX}.ipv4_endpoint.utilized",
+        "v6TotalEpCum": f"{LEAF_CAPACITY_PREFIX}.ipv6_endpoint.utilized",
     },
     "eqptcapacityVlanUsage5min": {
-        "totalCapCum": LEAF_CAPACITY_PREFIX + ".vlan.limit",
-        "totalCum": LEAF_CAPACITY_PREFIX + ".vlan.utilized",
+        "totalCapCum": f"{LEAF_CAPACITY_PREFIX}.vlan.limit",
+        "totalCum": f"{LEAF_CAPACITY_PREFIX}.vlan.utilized",
     },
     "eqptcapacityPolUsage5min": {
-        "polUsageCapCum": LEAF_CAPACITY_PREFIX + ".policy_cam.limit",
-        "polUsageCum": LEAF_CAPACITY_PREFIX + ".policy_cam.utilized",
+        "polUsageCapCum": f"{LEAF_CAPACITY_PREFIX}.policy_cam.limit",
+        "polUsageCum": f"{LEAF_CAPACITY_PREFIX}.policy_cam.utilized",
     },
     "eqptcapacityMcastUsage5min": {
-        "localEpCapCum": LEAF_CAPACITY_PREFIX + ".multicast.limit",
-        "localEpCum": LEAF_CAPACITY_PREFIX + ".multicast.utilized",
+        "localEpCapCum": f"{LEAF_CAPACITY_PREFIX}.multicast.limit",
+        "localEpCum": f"{LEAF_CAPACITY_PREFIX}.multicast.utilized",
     },
 }
 
-APIC_CAPACITY_PREFIX = CAPACITY_PREFIX + ".apic"
+APIC_CAPACITY_PREFIX = f"{CAPACITY_PREFIX}.apic"
 APIC_CAPACITY_LIMITS = {
-    "fabricNode": APIC_CAPACITY_PREFIX + ".fabric_node.limit",
-    "vzBrCP": APIC_CAPACITY_PREFIX + ".contract.limit",
-    "fvTenant": APIC_CAPACITY_PREFIX + ".tenant.limit",
-    "fvCEp": APIC_CAPACITY_PREFIX + ".endpoint.limit",
-    "plannerVmwareDomainTmpl": APIC_CAPACITY_PREFIX + ".vmware_domain.limit",
-    "fvCtx": APIC_CAPACITY_PREFIX + ".private_network.limit",
-    "plannerAzureDomainTmpl": APIC_CAPACITY_PREFIX + ".azure_domain.limit",
-    "plannerAzureDomain": APIC_CAPACITY_PREFIX + ".azure_domain.endpoint_group.limit",
-    "vnsGraphInst": APIC_CAPACITY_PREFIX + ".service_graph.limit",
-    "fvBD": APIC_CAPACITY_PREFIX + ".bridge_domain.limit",
-    "fvAEPg": APIC_CAPACITY_PREFIX + ".endpoint_group.limit",
-    "plannerVmwareDomain": APIC_CAPACITY_PREFIX + ".vmware_domain.endpoint_group.limit",
+    "fabricNode": f"{APIC_CAPACITY_PREFIX}.fabric_node.limit",
+    "vzBrCP": f"{APIC_CAPACITY_PREFIX}.contract.limit",
+    "fvTenant": f"{APIC_CAPACITY_PREFIX}.tenant.limit",
+    "fvCEp": f"{APIC_CAPACITY_PREFIX}.endpoint.limit",
+    "plannerVmwareDomainTmpl": f"{APIC_CAPACITY_PREFIX}.vmware_domain.limit",
+    "fvCtx": f"{APIC_CAPACITY_PREFIX}.private_network.limit",
+    "plannerAzureDomainTmpl": f"{APIC_CAPACITY_PREFIX}.azure_domain.limit",
+    "plannerAzureDomain": f"{APIC_CAPACITY_PREFIX}.azure_domain.endpoint_group.limit",
+    "vnsGraphInst": f"{APIC_CAPACITY_PREFIX}.service_graph.limit",
+    "fvBD": f"{APIC_CAPACITY_PREFIX}.bridge_domain.limit",
+    "fvAEPg": f"{APIC_CAPACITY_PREFIX}.endpoint_group.limit",
+    "plannerVmwareDomain": f"{APIC_CAPACITY_PREFIX}.vmware_domain.endpoint_group.limit",
 }
 
 APIC_CAPACITY_METRICS = {
-    "fvTenant": {"metric_name": APIC_CAPACITY_PREFIX + ".tenant.utilized"},
-    "fvCtx": {"metric_name": APIC_CAPACITY_PREFIX + ".private_network.utilized"},
-    "fvAEPg": {"metric_name": APIC_CAPACITY_PREFIX + ".endpoint_group.utilized"},
-    "fvBD": {"metric_name": APIC_CAPACITY_PREFIX + ".bridge_domain.utilized"},
-    "fvCEp": {"metric_name": APIC_CAPACITY_PREFIX + ".endpoint.utilized"},
+    "fvTenant": {"metric_name": f"{APIC_CAPACITY_PREFIX}.tenant.utilized"},
+    "fvCtx": {
+        "metric_name": f"{APIC_CAPACITY_PREFIX}.private_network.utilized"
+    },
+    "fvAEPg": {
+        "metric_name": f"{APIC_CAPACITY_PREFIX}.endpoint_group.utilized"
+    },
+    "fvBD": {"metric_name": f"{APIC_CAPACITY_PREFIX}.bridge_domain.utilized"},
+    "fvCEp": {"metric_name": f"{APIC_CAPACITY_PREFIX}.endpoint.utilized"},
     "fabricNode": {
         "query_string": 'query-target-filter=eq(fabricNode.role,"leaf")',
-        "metric_name": APIC_CAPACITY_PREFIX + ".fabric_node.utilized",
+        "metric_name": f"{APIC_CAPACITY_PREFIX}.fabric_node.utilized",
         "type": "len",
     },
 }

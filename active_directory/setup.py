@@ -33,7 +33,7 @@ def parse_pyproject_array(name):
     import re
     from ast import literal_eval
 
-    pattern = r'^{} = (\[.*?\])$'.format(name)
+    pattern = f'^{name} = (\[.*?\])$'
 
     with open(os.path.join(HERE, 'pyproject.toml'), 'r', encoding='utf-8') as f:
         # Windows \r\n prevents match

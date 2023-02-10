@@ -7,9 +7,13 @@ MINIMAL_INSTANCE = {'host': '.'}
 
 CHECK_NAME = 'active_directory'
 
-PERFORMANCE_OBJECTS = {}
-for object_name, instances in (('NTDS', [None]),):
-    PERFORMANCE_OBJECTS[object_name] = (
+PERFORMANCE_OBJECTS = {
+    object_name: (
         instances,
-        {counter: [9000] for counter in METRICS_CONFIG[object_name]['counters'][0]},
+        {
+            counter: [9000]
+            for counter in METRICS_CONFIG[object_name]['counters'][0]
+        },
     )
+    for object_name, instances in (('NTDS', [None]),)
+}

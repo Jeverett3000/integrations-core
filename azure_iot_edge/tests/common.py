@@ -14,16 +14,20 @@ IOT_EDGE_DEVICE_ID = 'testEdgeDevice'
 IOT_EDGE_IOTHUB_HOSTNAME = 'iot-edge-dev-hub.azure-devices.net'
 
 MOCK_SERVER_PORT = 9678
-MOCK_EDGE_HUB_PROMETHEUS_URL = 'http://localhost:{}/metrics/edge_hub.txt'.format(MOCK_SERVER_PORT)
-MOCK_EDGE_AGENT_PROMETHEUS_URL = 'http://localhost:{}/metrics/edge_agent.txt'.format(MOCK_SERVER_PORT)
+MOCK_EDGE_HUB_PROMETHEUS_URL = (
+    f'http://localhost:{MOCK_SERVER_PORT}/metrics/edge_hub.txt'
+)
+MOCK_EDGE_AGENT_PROMETHEUS_URL = (
+    f'http://localhost:{MOCK_SERVER_PORT}/metrics/edge_agent.txt'
+)
 # Defined in Edge Agent fixtures.
 MOCK_EDGE_AGENT_VERSION = ('1', '0', '10', '1.0.10-rc2.34217022 (029016ef1bf82dec749161d95c6b73aa5ee9baf1)')
 
 CUSTOM_TAGS = ['env:testing']
 
 TAGS = CUSTOM_TAGS + [
-    'edge_device:{}'.format(IOT_EDGE_DEVICE_ID),
-    'iothub:{}'.format(IOT_EDGE_IOTHUB_HOSTNAME),
+    f'edge_device:{IOT_EDGE_DEVICE_ID}',
+    f'iothub:{IOT_EDGE_IOTHUB_HOSTNAME}',
 ]
 
 HUB_METRICS = [
@@ -369,8 +373,8 @@ E2E_METRICS = (
 )
 
 E2E_TAGS = CUSTOM_TAGS + [
-    'edge_device:{}'.format(IOT_EDGE_DEVICE_ID),
-    'iothub:{}'.format(IOT_EDGE_IOTHUB_HOSTNAME),
+    f'edge_device:{IOT_EDGE_DEVICE_ID}',
+    f'iothub:{IOT_EDGE_IOTHUB_HOSTNAME}',
 ]
 
 E2E_METADATA = {

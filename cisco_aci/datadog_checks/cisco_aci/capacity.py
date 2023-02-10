@@ -64,21 +64,19 @@ class Capacity:
                     if not child_attrs or type(child_attrs) is not dict:
                         continue
                     for cisco_metric, dd_metric in iteritems(metric_dict):
-                        value = child_attrs.get(cisco_metric)
-                        if not value:
-                            continue
-                        self.gauge(dd_metric, value, tags=tags, hostname=hostname)
+                        if value := child_attrs.get(cisco_metric):
+                            self.gauge(dd_metric, value, tags=tags, hostname=hostname)
 
     def _get_contexts(self):
         for c, metric_dict in iteritems(aci_metrics.CAPACITY_CONTEXT_METRICS):
             dd_metric = metric_dict.get("metric_name")
-            utilized_metric_name = dd_metric + ".utilized"
+            utilized_metric_name = f"{dd_metric}.utilized"
             # These Values are, for some reason, hardcoded in the UI
             # it is not api addressable
             # we need them to make it addressable
             # for the demo, we're hardcoding it
             limit_value = metric_dict.get("limit_value")
-            limit_metric_name = dd_metric + ".limit"
+            limit_metric_name = f"{dd_metric}.limit"
             data = self.api.get_capacity_contexts(c)
             for d in data:
                 attr = d.get('ctxClassCnt', {}).get('attributes', {})
@@ -99,8 +97,7 @@ class Capacity:
             attr = d.get('fvcapRule', {}).get('attributes', {})
             value = attr.get('constraint', 0)
             subj = attr.get('subj')
-            dd_metric = aci_metrics.APIC_CAPACITY_LIMITS.get(subj)
-            if dd_metric:
+            if dd_metric := aci_metrics.APIC_CAPACITY_LIMITS.get(subj):
                 self.gauge(dd_metric, value, tags=tags)
 
     def _get_apic_capacity_metrics(self):
@@ -113,7 +110,9 @@ class Capacity:
                 self.gauge(dd_metric, value, tags=tags)
             else:
                 for d in data:
-                    value = d.get('moCount', {}).get('attributes', {}).get('count')
-                    if not value:
-                        continue
-                    self.gauge(dd_metric, value, tags=tags)
+                    if (
+                        value := d.get('moCount', {})
+                        .get('attributes', {})
+                        .get('count')
+                    ):
+                        self.gauge(dd_metric, value, tags=tags)

@@ -50,6 +50,8 @@ def test_version_metadata(aggregator, instance_legacy, datadog_agent, dd_run_che
 
 def _test_check(aggregator):
     for metric in itervalues(METRIC_MAP):
-        aggregator.assert_metric('cockroachdb.{}'.format(metric), at_least=0)
+        aggregator.assert_metric(f'cockroachdb.{metric}', at_least=0)
 
-    assert aggregator.metrics_asserted_pct > 80, 'Missing metrics {}'.format(aggregator.not_asserted())
+    assert (
+        aggregator.metrics_asserted_pct > 80
+    ), f'Missing metrics {aggregator.not_asserted()}'

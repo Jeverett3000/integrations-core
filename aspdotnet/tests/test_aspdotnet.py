@@ -27,7 +27,7 @@ def test_basic_check(aggregator):
 
     for metric in common.ASP_APP_METRICS:
         for i in common.ASP_APP_INSTANCES:
-            aggregator.assert_metric(metric, tags=["instance:%s" % i], count=1)
+            aggregator.assert_metric(metric, tags=[f"instance:{i}"], count=1)
 
     assert aggregator.metrics_asserted_pct == 100.0
 
@@ -42,6 +42,8 @@ def test_with_tags(aggregator):
 
     for metric in common.ASP_APP_METRICS:
         for i in common.ASP_APP_INSTANCES:
-            aggregator.assert_metric(metric, tags=['tag1', 'another:tag', "instance:%s" % i], count=1)
+            aggregator.assert_metric(
+                metric, tags=['tag1', 'another:tag', f"instance:{i}"], count=1
+            )
 
     assert aggregator.metrics_asserted_pct == 100.0

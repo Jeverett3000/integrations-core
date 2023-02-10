@@ -40,20 +40,17 @@ class ActiveMQXML(AgentCheck):
         tags = custom_tags + ["url:{0}".format(url)]
 
         self.log.debug("Processing ActiveMQ data for %s", url)
-        data = self._fetch_data(url, QUEUE_URL, suppress_errors)
-        if data:
+        if data := self._fetch_data(url, QUEUE_URL, suppress_errors):
             self._process_data(data, "queue", tags, max_queues, detailed_queues)
 
-        data = self._fetch_data(url, TOPIC_URL, suppress_errors)
-        if data:
+        if data := self._fetch_data(url, TOPIC_URL, suppress_errors):
             self._process_data(data, "topic", tags, max_topics, detailed_topics)
 
-        data = self._fetch_data(url, SUBSCRIBER_URL, suppress_errors)
-        if data:
+        if data := self._fetch_data(url, SUBSCRIBER_URL, suppress_errors):
             self._process_subscriber_data(data, tags, max_subscribers, detailed_subscribers)
 
     def _fetch_data(self, base_url, xml_url, suppress_errors):
-        url = "%s%s" % (base_url, xml_url)
+        url = f"{base_url}{xml_url}"
         self.log.debug("ActiveMQ Fetching queue data from: %s", url)
         try:
             r = self.http.get(url)
@@ -75,18 +72,17 @@ class ActiveMQXML(AgentCheck):
             elements = [e for e in root.findall(el_type) if e.get('name')]
         count = len(elements)
 
-        if count > max_elements:
-            if not detailed_elements:
-                self.warning(
-                    "Number of %s is too high (%s > %s). "
-                    "Please use the detailed_%ss parameter"
-                    " to list the %s you want to monitor.",
-                    el_type,
-                    count,
-                    max_elements,
-                    el_type,
-                    el_type,
-                )
+        if count > max_elements and not detailed_elements:
+            self.warning(
+                "Number of %s is too high (%s > %s). "
+                "Please use the detailed_%ss parameter"
+                " to list the %s you want to monitor.",
+                el_type,
+                count,
+                max_elements,
+                el_type,
+                el_type,
+            )
 
         for el in elements[:max_elements]:
             name = el.get("name")
@@ -112,16 +108,15 @@ class ActiveMQXML(AgentCheck):
             subscribers = [s for s in root.findall("subscriber") if s.get("clientId")]
 
         count = len(subscribers)
-        if count > max_subscribers:
-            if not detailed_subscribers:
-                self.warning(
-                    "Number of subscribers is too high (%s > %s)."
-                    "Please use the detailed_subscribers parameter "
-                    "to list the %s you want to monitor.",
-                    count,
-                    max_subscribers,
-                    count,
-                )
+        if count > max_subscribers and not detailed_subscribers:
+            self.warning(
+                "Number of subscribers is too high (%s > %s)."
+                "Please use the detailed_subscribers parameter "
+                "to list the %s you want to monitor.",
+                count,
+                max_subscribers,
+                count,
+            )
 
         for subscriber in subscribers[:max_subscribers]:
             clientId = subscriber.get("clientId")
@@ -137,7 +132,7 @@ class ActiveMQXML(AgentCheck):
             for name in SUBSCRIBER_TAGS:
                 value = subscriber.get(name)
                 if value is not None:
-                    el_tags.append("%s:%s" % (name, value))
+                    el_tags.append(f"{name}:{value}")
 
             pending_queue_size = stats.get("pendingQueueSize", 0)
             dequeue_counter = stats.get("dequeueCounter", 0)

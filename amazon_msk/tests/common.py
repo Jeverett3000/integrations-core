@@ -19,7 +19,7 @@ COMPOSE_FILE = os.path.join(HERE, 'docker', 'docker-compose.yaml')
 
 E2E_METADATA = {
     'post_install_commands': ['pip install /home/mock_boto3'],
-    'docker_volumes': ['{}:/home/mock_boto3'.format(os.path.join(HERE, 'mock_boto3'))],
+    'docker_volumes': [f"{os.path.join(HERE, 'mock_boto3')}:/home/mock_boto3"],
 }
 
 METRICS_FROM_LABELS = [
@@ -56,7 +56,7 @@ METRICS_FROM_LABELS = [
 
 
 def get_metrics_fixture_path(exporter_type):
-    return os.path.join(HERE, 'docker', 'exporter_{}'.format(exporter_type), 'metrics')
+    return os.path.join(HERE, 'docker', f'exporter_{exporter_type}', 'metrics')
 
 
 def read_api_fixture():

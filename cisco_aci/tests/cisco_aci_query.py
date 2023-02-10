@@ -16,35 +16,29 @@ api_path = str.format('/api/mo/uni/tn-{}.json?rsp-subtree-include=stats,no-scope
 
 def apic_login(apic, username, password):
     """APIC login and return session cookie"""
-    apic_cookie = {}
     credentials = {'aaaUser': {'attributes': {'name': username, 'pwd': password}}}
     json_credentials = json.dumps(credentials)
-    base_url = 'https://' + apic + '/api/aaaLogin.json'
+    base_url = f'https://{apic}/api/aaaLogin.json'
 
     login_response = requests.post(base_url, data=json_credentials, verify=False)
 
     login_response_json = json.loads(login_response.text)
     token = login_response_json['imdata'][0]['aaaLogin']['attributes']['token']
-    apic_cookie['APIC-Cookie'] = token
-    return apic_cookie
+    return {'APIC-Cookie': token}
 
 
 def apic_query(apic, path, cookie):
     """APIC 'GET' query and return response"""
-    base_url = 'https://' + apic + path
+    base_url = f'https://{apic}{path}'
 
-    get_response = requests.get(base_url, cookies=cookie, verify=False)
-
-    return get_response
+    return requests.get(base_url, cookies=cookie, verify=False)
 
 
 def apic_logout(apic, cookie):
     """APIC logout and return response"""
-    base_url = 'https://' + apic + '/api/aaaLogout.json'
+    base_url = f'https://{apic}/api/aaaLogout.json'
 
-    post_response = requests.post(base_url, cookies=cookie, verify=False)
-
-    return post_response
+    return requests.post(base_url, cookies=cookie, verify=False)
 
 
 apic_cookie = apic_login(apic=apic_url, username=apic_username, password=apic_password)

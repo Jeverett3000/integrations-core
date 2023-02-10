@@ -68,7 +68,12 @@ def test_multiple_xdr_metrics(aggregator):
     for host in ['ip-10-10-17-247.ec2.internal', 'ip-10-10-17-144.ec2.internal']:
         for metric in common.XDR_DC_METRICS:
             aggregator.assert_metric(
-                metric, tags=['datacenter:test', 'remote_dc_port:3000', 'remote_dc_host:{}'.format(host)]
+                metric,
+                tags=[
+                    'datacenter:test',
+                    'remote_dc_port:3000',
+                    f'remote_dc_host:{host}',
+                ],
             )
 
 
@@ -146,7 +151,7 @@ def test_collect_latency_parser(aggregator, return_vals):
             if "batch_index" in metric:
                 aggregator.assert_metric(metric, tags=['tag:value'])
             else:
-                aggregator.assert_metric(metric, tags=['namespace:{}'.format(ns), 'tag:value'])
+                aggregator.assert_metric(metric, tags=[f'namespace:{ns}', 'tag:value'])
     aggregator.assert_all_metrics_covered()
 
 
@@ -220,18 +225,18 @@ def test_collect_latencies_parser(aggregator, return_vals):
         for i in range(17):
             bucket = 2**i
             aggregator.assert_metric(
-                'aerospike.namespace.latency.{}'.format(metric_type),
-                tags=['namespace:{}'.format('test'), 'tag:value', 'bucket:{}'.format(str(bucket))],
+                f'aerospike.namespace.latency.{metric_type}',
+                tags=['namespace:test', 'tag:value', f'bucket:{str(bucket)}'],
             )
 
         for n in [1, 8, 64]:
             aggregator.assert_metric(
-                'aerospike.namespace.latency.{}_over_{}ms'.format(metric_type, str(n)),
-                tags=['namespace:{}'.format('test'), 'tag:value', 'bucket:{}'.format(str(n))],
+                f'aerospike.namespace.latency.{metric_type}_over_{str(n)}ms',
+                tags=['namespace:test', 'tag:value', f'bucket:{str(n)}'],
             )
 
         aggregator.assert_metric(
-            'aerospike.namespace.latency.{}_ops_sec'.format(metric_type),
-            tags=['namespace:{}'.format('test'), 'tag:value'],
+            f'aerospike.namespace.latency.{metric_type}_ops_sec',
+            tags=['namespace:test', 'tag:value'],
         )
     aggregator.assert_all_metrics_covered()

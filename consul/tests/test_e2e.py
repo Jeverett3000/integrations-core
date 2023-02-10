@@ -31,7 +31,12 @@ def test_e2e(dd_agent_check, instance_single_node_install):
         aggregator.assert_metric(metric, tags=['consul_datacenter:dc1'], at_least=0)
 
     aggregator.assert_service_check(
-        'consul.up', ConsulCheck.OK, tags=['consul_datacenter:dc1', 'consul_url:http://{}:8500'.format(common.HOST)]
+        'consul.up',
+        ConsulCheck.OK,
+        tags=[
+            'consul_datacenter:dc1',
+            f'consul_url:http://{common.HOST}:8500',
+        ],
     )
     aggregator.assert_service_check(
         'consul.check',
@@ -39,28 +44,44 @@ def test_e2e(dd_agent_check, instance_single_node_install):
         tags=['check:serfHealth', 'consul_datacenter:dc1', 'consul_node:node-consul-follower-1'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/status/leader'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/status/leader'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/status/peers'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/status/peers'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/agent/self'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/agent/self'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/health/state/any'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/health/state/any'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/catalog/services'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/catalog/services'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/catalog/nodes'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/catalog/nodes'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/coordinate/datacenters'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/coordinate/datacenters'],
     )
     aggregator.assert_service_check(
-        'consul.can_connect', ConsulCheck.OK, tags=['url:http://{}:8500/v1/coordinate/nodes'.format(common.HOST)]
+        'consul.can_connect',
+        ConsulCheck.OK,
+        tags=[f'url:http://{common.HOST}:8500/v1/coordinate/nodes'],
     )
     aggregator.assert_metrics_using_metadata(get_metadata_metrics())
     aggregator.assert_all_metrics_covered()

@@ -8,7 +8,7 @@ from datadog_checks.dev import get_docker_hostname
 
 HOST = get_docker_hostname()
 
-URL = 'http://{}:8080'.format(HOST)
+URL = f'http://{HOST}:8080'
 
 AIRFLOW_VERSION = os.getenv('AIRFLOW_VERSION')
 

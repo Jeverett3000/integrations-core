@@ -89,7 +89,7 @@ class Tenant:
             return
         try:
             stats = self.api.get_tenant_stats(tenant)
-            tags = ["tenant:" + tenant]
+            tags = [f"tenant:{tenant}"]
             self.submit_raw_obj(stats, tags, 'tenant')
         except (exceptions.APIConnectionException, exceptions.APIParsingException):
             pass
@@ -132,23 +132,22 @@ class Tenant:
         event_list = self.api.get_tenant_events(tenant, page=page, page_size=15)
 
         now = int(time.time())
-        prior_ts = self.last_events_ts.get(tenant)
-        time_window = 600
-        if prior_ts:
+        if prior_ts := self.last_events_ts.get(tenant):
             time_window = now - prior_ts
-
+        else:
+            time_window = 600
         self.last_events_ts[tenant] = now
 
-        log_line = "Fetched: {} events".format(len(event_list))
+        log_line = f"Fetched: {len(event_list)} events"
         if len(event_list) > 0:
             created = event_list[0].get('eventRecord', {}).get('attributes', {}).get('created')
-            log_line += ", most recent is from: {}".format(created)
+            log_line += f", most recent is from: {created}"
         self.log.info(log_line)
 
         for event in event_list:
             ev = event.get('eventRecord', {}).get('attributes', {})
             created = ev.get('created')
-            create_date = re.search(r'\d{4}-\d{2}-\d{1,2}T\d{2}:\d{2}:\d{2}', created).group(0)
+            create_date = re.search(r'\d{4}-\d{2}-\d{1,2}T\d{2}:\d{2}:\d{2}', created)[0]
 
             self.log.debug("ev time: %s", created)
             strptime = datetime.datetime.strptime(create_date, '%Y-%m-%dT%H:%M:%S')
@@ -160,7 +159,7 @@ class Tenant:
 
             title = "The resource: " + ev['affected'] + " emitted an event"
             dn_tags = helpers.get_event_tags_from_dn(ev['dn'])
-            tags = ["tenant:" + tenant]
+            tags = [f"tenant:{tenant}"]
             tags = tags + self.user_tags + self.check_tags
             if 'code' in ev:
                 tags.append("code:" + ev['code'])

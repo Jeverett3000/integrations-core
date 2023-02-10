@@ -47,21 +47,20 @@ class Ceph(AgentCheck):
         self._octopus = False
 
     def _collect_raw(self, ceph_cmd, ceph_cluster, instance):
-        use_sudo = _is_affirmative(instance.get('use_sudo', False))
-        if use_sudo:
+        if use_sudo := _is_affirmative(instance.get('use_sudo', False)):
             test_sudo = os.system('setsid sudo -l < /dev/null')
             if test_sudo != 0:
                 raise CheckException('The dd-agent user does not have sudo access')
-            ceph_args = 'sudo {}'.format(ceph_cmd)
+            ceph_args = f'sudo {ceph_cmd}'
         else:
             ceph_args = ceph_cmd
 
-        ceph_args = '{} --cluster {}'.format(ceph_args, ceph_cluster)
+        ceph_args = f'{ceph_args} --cluster {ceph_cluster}'
 
         raw = {}
         for cmd in ('mon_status', 'status', 'df detail', 'osd pool stats', 'osd perf', 'health detail'):
             try:
-                args = '{} {} -fjson'.format(ceph_args, cmd)
+                args = f'{ceph_args} {cmd} -fjson'
                 output, _, _ = get_subprocess_output(args.split(), self.log)
                 res = json.loads(output)
             except Exception as e:
@@ -89,12 +88,12 @@ class Ceph(AgentCheck):
             fsid = raw['status']['fsid']
         elif 'mon_status' in raw:
             fsid = raw['mon_status']['monmap']['fsid']
-            tags.append(self.NAMESPACE + '_mon_state:%s' % raw['mon_status']['state'])
+            tags.append(f"{self.NAMESPACE}_mon_state:{raw['mon_status']['state']}")
         else:
             self.log.debug("Could not find fsid")
 
         if fsid is not None:
-            tags.append(self.NAMESPACE + '_fsid:%s' % fsid)
+            tags.append(f'{self.NAMESPACE}_fsid:{fsid}')
 
         return tags
 
@@ -102,7 +101,7 @@ class Ceph(AgentCheck):
         try:
             for k in keyspec:
                 raw = raw[k]
-            func(self.NAMESPACE + '.' + k, raw, tags)
+            func(f'{self.NAMESPACE}.{k}', raw, tags)
         except KeyError:
             return
 

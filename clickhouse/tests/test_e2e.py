@@ -13,8 +13,8 @@ pytestmark = pytest.mark.e2e
 
 def test_check(dd_agent_check, instance):
     aggregator = dd_agent_check(instance, rate=True)
-    server_tag = 'server:{}'.format(instance['server'])
-    port_tag = 'port:{}'.format(instance['port'])
+    server_tag = f"server:{instance['server']}"
+    port_tag = f"port:{instance['port']}"
     metrics = get_metrics(CLICKHOUSE_VERSION)
 
     for metric in metrics:

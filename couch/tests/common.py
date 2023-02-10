@@ -12,7 +12,7 @@ CHECK_ID = 'test:123'
 
 PORT = "5984"
 HOST = get_docker_hostname()
-URL = "http://{}:{}".format(HOST, PORT)
+URL = f"http://{HOST}:{PORT}"
 USER = "dduser"
 PASSWORD = "pawprint"
 
@@ -46,7 +46,7 @@ BASIC_CONFIG = {"server": URL}
 
 BASIC_CONFIG_V2 = {"server": URL, "user": "dduser", "password": "pawprint"}
 
-BASIC_CONFIG_TAGS = ["instance:{}".format(URL)]
+BASIC_CONFIG_TAGS = [f"instance:{URL}"]
 
 BAD_CONFIG = {"server": "http://localhost:11111"}
 
